@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sterling Fleet Outfitters Configurator</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+      /* LIGHT THEME (Default) */
+      --bg-color: #e7f5ff; 
+      --gold-primary: #1b4c96; 
+      --gold-glow: rgba(27, 76, 150, 0.3);
+      --glass-bg: rgba(255, 255, 255, 0.85); 
+      --glass-border: rgba(27, 76, 150, 0.15); 
+      --text-main: #172f53; 
+      --text-muted: #5c728a; 
+      --input-bg: rgba(255, 255, 255, 0.6);
+      --input-focus: #ffffff;
+      --panel-solid: rgba(255, 255, 255, 0.95);
+      --overlay-bg: rgba(23, 47, 83, 0.6);
+    }
+
+    [data-theme="dark"] {
+      /* DARK THEME */
+      --bg-color: #091321; 
+      --gold-primary: #4aa4f0; /* Brightened blue for dark mode contrast */
+      --gold-glow: rgba(74, 164, 240, 0.4);
+      --glass-bg: rgba(23, 47, 83, 0.75); 
+      --glass-border: rgba(231, 245, 255, 0.15); 
+      --text-main: #ffffff; 
+      --text-muted: #a4c0e4; 
+      --input-bg: rgba(0, 0, 0, 0.3);
+      --input-focus: #0b172a;
+      --panel-solid: rgba(23, 47, 83, 0.95);
+      --overlay-bg: rgba(0, 0, 0, 0.8);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* Animated Background Blobs */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      animation: float 10s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      width: 400px; height: 400px;
+      background: var(--gold-glow);
+      top: -100px; left: -100px;
+      animation-delay: 0s;
+    }
+    .blob-2 {
+      width: 300px; height: 300px;
+      background: rgba(23, 47, 83, 0.1);
+      bottom: -50px; right: -50px;
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 50px) scale(1.1); }
+    }
+
+    .glass-panel {
+      position: relative;
+      z-index: 1;
+      width: 90%;
+      max-width: 600px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.8s forwards ease-out;
+      transition: background 0.4s ease, border-color 0.4s ease;
+    }
+
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    .header { text-align: center; margin-bottom: 30px; margin-top: 20px; padding: 0 30px; }
+    .header h1 {
+      font-size: 28px; font-weight: 600; letter-spacing: 1px; margin-bottom: 5px;
+      background: linear-gradient(90deg, var(--text-main), var(--gold-primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.3;
+    }
+    .header p { color: var(--text-muted); font-size: 14px; }
+
+    /* Logo Theme Switcher */
+    .logo-container { margin-bottom: 10px; }
+    .logo-container img { max-width: 280px; height: auto; margin: 0 auto; transition: opacity 0.3s ease; }
+    
+    /* Increased specificity so these rules always win */
+    .logo-container .logo-dark { display: none; }
+    .logo-container .logo-light { display: block; }
+    
+    [data-theme="dark"] .logo-container .logo-light { display: none; }
+    [data-theme="dark"] .logo-container .logo-dark { display: block; }
+
+    .input-group { margin-bottom: 25px; position: relative; }
+    .input-group label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 1px; }
+    .input-wrapper { position: relative; }
+    .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); font-size: 16px; }
+
+    select {
+      width: 100%; padding: 14px 15px 14px 45px;
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px; color: var(--text-main);
+      font-size: 15px; font-weight: 500; appearance: none; outline: none;
+      transition: all 0.3s ease; cursor: pointer;
+    }
+    select:focus { border-color: var(--gold-primary); box-shadow: 0 0 10px var(--gold-glow); background: var(--input-focus); }
+    select:disabled { opacity: 0.6; cursor: not-allowed; }
+    select option { background: var(--input-focus); color: var(--text-main); }
+
+    .toggle-group { display: flex; gap: 10px; margin-bottom: 25px; }
+    .toggle-group input[type="radio"] { display: none; }
+    .toggle-label {
+      flex: 1; text-align: center; padding: 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px; color: var(--text-muted); cursor: pointer;
+      transition: all 0.3s ease; font-weight: 500; font-size: 14px;
+    }
+    .toggle-group input[type="radio"]:checked + .toggle-label {
+      background: rgba(27, 76, 150, 0.1); border-color: var(--gold-primary);
+      color: var(--gold-primary); font-weight: 600; box-shadow: 0 0 10px var(--gold-glow);
+    }
+
+    .hidden-step { display: none; opacity: 0; transition: opacity 0.5s ease; }
+    .visible-step { display: block; opacity: 1; animation: fadeInUp 0.5s forwards ease-out; }
+
+    #options-container { margin-top: 20px; padding-bottom: 80px; }
+    .option-category { background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+    .option-category h4 { margin-bottom: 15px; color: var(--text-main); font-weight: 600; font-size: 15px; }
+    .option-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--glass-border); cursor: pointer; transition: all 0.3s ease; }
+    .option-item:last-child { border-bottom: none; }
+    .option-item:hover { background: rgba(27, 76, 150, 0.05); border-radius: 8px; }
+    .option-item.dimmed { opacity: 0.4; filter: grayscale(100%); }
+    .option-item.dimmed .option-name { text-decoration: line-through; }
+    .option-item.locked .option-checkbox, .option-item.locked .option-name, .option-item.locked .option-price, .option-item.locked .qty-input, .option-item.locked .side-pills, .option-item.locked .sub-options-container { opacity: 0.35; filter: grayscale(100%); pointer-events: none; }
+
+    .teleport-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: rgba(27, 76, 150, 0.1); border: 1px solid var(--gold-primary); border-radius: 4px;
+      color: var(--gold-primary); cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 10px;
+      pointer-events: auto !important; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .teleport-btn:hover { background: var(--gold-primary); color: #fff; box-shadow: 0 0 10px var(--gold-glow); transform: scale(1.05); }
+
+    @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 var(--gold-glow); } 70% { box-shadow: 0 0 0 15px rgba(27, 76, 150, 0); } 100% { box-shadow: 0 0 0 0 rgba(27, 76, 150, 0); } }
+    .target-highlight { animation: pulse-gold 1.5s ease-out 2; border: 1px solid var(--gold-primary) !important; background: rgba(27, 76, 150, 0.05); border-radius: 8px;}
+    
+    .option-info { display: flex; align-items: center; gap: 12px; }
+    .option-checkbox { accent-color: var(--gold-primary); width: 18px; height: 18px; cursor: pointer; }
+    .option-name { font-size: 14px; color: var(--text-main); font-weight: 500;}
+    .option-price { font-size: 14px; font-weight: 600; color: var(--gold-primary); }
+
+    .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; margin-right: 4px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-border); transition: .4s; border: 1px solid var(--glass-border); }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--text-muted); transition: .4s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: var(--gold-primary); border-color: var(--gold-primary); }
+    input:checked + .slider:before { transform: translateX(16px); background-color: #fff;}
+    .slider.round { border-radius: 20px; } .slider.round:before { border-radius: 50%; }
+
+    .side-pills { display: flex; gap: 8px; flex-shrink: 0; }
+    .hidden-pill-cb { display: none; }
+    .side-pill {
+      padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-muted);
+      background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px;
+      cursor: pointer; transition: all 0.2s; user-select: none;
+    }
+    .hidden-pill-cb:checked + .side-pill { background: rgba(27, 76, 150, 0.1); color: var(--gold-primary); border-color: var(--gold-primary); box-shadow: 0 0 8px var(--gold-glow); }
+
+    .qty-input {
+      width: 45px; background: var(--input-bg); border: 1px solid var(--glass-border); 
+      color: var(--text-main); border-radius: 4px; padding: 2px 4px; font-size: 13px; outline: none; font-weight: 500;
+    }
+    .qty-input:focus { border-color: var(--gold-primary); background: var(--input-focus); }
+    .qty-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .badge-green { background: rgba(46, 204, 113, 0.15); color: #27ae60; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(46, 204, 113, 0.3); font-weight: 600;}
+    .badge-red { background: rgba(231, 76, 60, 0.15); color: #c0392b; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(231, 76, 60, 0.3); font-weight: 600;}
+    .badge-yellow { background: rgba(243, 156, 18, 0.15); color: #d35400; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(243, 156, 18, 0.3); font-weight: 600;}
+    .price-negative { color: #e74c3c; }
+    
+    .sub-options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .sub-opt-radio { display: none; }
+    .sub-opt-label { 
+      padding: 3px 10px; font-size: 11px; color: var(--text-muted); 
+      background: var(--input-bg); border: 1px solid var(--glass-border); 
+      border-radius: 12px; cursor: pointer; transition: all 0.2s; user-select: none; font-weight: 500;
+    }
+    .sub-opt-radio:checked + .sub-opt-label { background: rgba(27, 76, 150, 0.1); color: var(--gold-primary); border-color: var(--gold-primary); box-shadow: 0 0 8px var(--gold-glow); font-weight: 600; }
+    .sub-opt-radio:disabled + .sub-opt-label { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+    .size-chip { display: inline-block; margin-top: 8px; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--gold-primary); background: rgba(27, 76, 150, 0.1); border: 1px solid var(--gold-primary); border-radius: 12px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    .size-chip.visible { opacity: 1; }
+
+    #quote-dashboard {
+      display: none; position: sticky; bottom: 20px; margin-top: 30px;
+      background: var(--panel-solid);
+      border: 1px solid var(--gold-primary); border-radius: 16px; padding: 20px;
+      justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 10;
+      transition: background 0.4s ease;
+    }
+    .quote-labels { display: flex; flex-direction: column; }
+    .quote-title { font-size: 12px; text-transform: uppercase; color: var(--gold-primary); letter-spacing: 1px; font-weight: 700; }
+    .quote-base { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500;}
+    .quote-total { font-size: 28px; font-weight: 700; color: var(--text-main); }
+
+    .input-wrapper::after { content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); pointer-events: none; transition: transform 0.3s ease; }
+    .loader-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .loader { border: 3px solid var(--glass-border); border-top: 3px solid var(--gold-primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #app-content { display: none; }
+
+    .sticky-summary {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px;
+      background: var(--panel-solid);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--gold-primary);
+      border-radius: 12px; padding: 12px 20px; z-index: 100; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); transition: top 0.4s ease, background 0.4s ease;
+      color: var(--text-main); font-size: 13px; font-weight: 600; white-space: nowrap;
+    }
+    .sticky-summary.visible { top: 20px; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(5px); z-index: 1000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-content { background: var(--panel-solid); border: 1px solid var(--gold-primary); border-radius: 20px; padding: 30px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s ease; }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .modal-content h3 { color: var(--text-main); margin-bottom: 10px; font-size: 20px; }
+    .modal-content p { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+    .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+    .btn-cancel, .btn-confirm { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .btn-cancel { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--glass-border); }
+    .btn-cancel:hover { background: var(--glass-border); }
+    .btn-confirm { background: var(--gold-primary); color: #ffffff; border: 1px solid var(--gold-primary); }
+    .btn-confirm:hover { box-shadow: 0 0 15px var(--gold-glow); }
+
+    .action-buttons-container {
+      position: absolute; top: 25px; right: 25px; display: flex; gap: 10px; z-index: 10;
+    }
+    .theme-btn, .reset-btn {
+      background: var(--input-bg); color: var(--gold-primary); border: 1px solid var(--glass-border);
+      padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .theme-btn:hover { background: var(--glass-border); color: var(--gold-primary); box-shadow: 0 0 10px var(--gold-glow); }
+    .reset-btn { color: #c0392b; background: rgba(231, 76, 60, 0.1); border-color: rgba(231, 76, 60, 0.3); }
+    .reset-btn:hover { background: rgba(231, 76, 60, 0.15); box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); color: #c0392b;}
+
+    .image-popover-trigger { position: relative; display: inline-flex; align-items: center; color: var(--gold-primary); margin-left: 8px; cursor: pointer; font-size: 14px; pointer-events: auto !important; }
+    .image-popover-content { visibility: hidden; opacity: 0; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel-solid); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); padding: 6px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); transition: all 0.2s ease-out; z-index: 1000; width: max-content; pointer-events: none; }
+    .image-popover-content img { max-width: 220px; max-height: 220px; border-radius: 6px; display: block; object-fit: cover; }
+    .image-popover-content::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: var(--panel-solid) transparent transparent transparent; }
+    .image-popover-content.active { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* =========================================
+       📱 MOBILE OPTIMIZATION (Responsive Design) 
+       ========================================= */
+    @media (max-width: 600px) {
+      /* Remove body padding to allow edge-to-edge display */
+      body { padding: 0; }
+      
+      /* Hide background blobs to save performance and space */
+      .blob { display: none !important; }
+      
+      /* Stretch glass panel to act as the native app background */
+      .glass-panel { 
+        width: 100%; 
+        min-height: 100vh; 
+        border-radius: 0; 
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        box-shadow: none;
+        padding: 70px 15px 25px 15px; /* Push content down so it clears the action buttons */
+      }
+      
+      /* Pin action buttons to the absolute top right of the screen */
+      .action-buttons-container { position: fixed; top: 15px; right: 15px; gap: 8px; z-index: 100; }
+      .theme-btn, .reset-btn { padding: 6px 10px; font-size: 11px; }
+      
+      /* Adjust header for full-width layout */
+      .header { margin-top: 0; padding: 0; }
+      .header h1 { font-size: 24px; }
+      
+      /* Stack Option Items (Name/Controls on top, Price on bottom right) */
+      .option-item { 
+        flex-direction: column; 
+        align-items: flex-start !important; 
+        padding: 15px 5px !important; 
+        gap: 10px;
+      }
+      .option-price { 
+        align-self: flex-end; 
+        margin-top: 5px !important; 
+        font-size: 15px;
+      }
+      
+      /* Wrap sub-options if they are too long */
+      .side-pills, .sub-options-container { flex-wrap: wrap; }
+      
+      /* Dock Quote Dashboard nicely at the bottom */
+      #quote-dashboard { 
+        padding: 15px; 
+        flex-direction: column; 
+        align-items: stretch; 
+        gap: 12px; 
+        border-radius: 20px 20px 0 0; /* Rounded top only */
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        margin: 20px -15px -25px -15px; /* Stretch past panel padding */
+        bottom: 0;
+      }
+      .quote-total { text-align: right; font-size: 24px; }
+      
+      /* Snap Sticky Summary to the very top edge */
+      .sticky-summary { 
+        font-size: 11px; 
+        padding: 12px 10px; 
+        width: 100%; 
+        border-radius: 0 0 16px 16px; 
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        white-space: normal; 
+      }
+      .sticky-summary.visible { top: 0; } /* Snaps perfectly to the top */
+      .sticky-summary > div { flex-direction: column; gap: 8px; text-align: center; }
+      .sticky-summary span { margin-right: 0 !important; white-space: normal !important; line-height: 1.4; }
+      
+      /* Keep image popover on screen */
+      .image-popover-content { transform: translateX(-75%) translateY(10px); }
+      .image-popover-content.active { transform: translateX(-75%) translateY(0); }
+      .image-popover-content::after { left: 75%; }
+      .image-popover-content img { max-width: 180px; max-height: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div id="sticky-summary" class="sticky-summary"></div>
+
+  <div id="reset-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--gold-primary); margin-right:8px;"></i> Reset Required</h3>
+      <p>Changing this base selection will clear your configured options. Are you sure you want to proceed?</p>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="resolveModal(false)">Cancel</button>
+        <button class="btn-confirm" onclick="resolveModal(true)">Yes, Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="login-screen" class="glass-panel" style="width: 100%; max-width: 400px; text-align: center; margin: 0 auto; align-self: center; position: relative;">
+    
+    <div style="position: absolute; top: 20px; right: 20px;">
+      <button class="theme-btn" onclick="toggleTheme()" title="Switch Theme">
+        <i class="fa-solid fa-moon theme-icon-class"></i>
+      </button>
+    </div>
+
+    <div class="logo-container" style="margin-bottom: 25px; margin-top: 10px;">
+      <img src="https://drive.google.com/thumbnail?id=1RNVjlJ816sBAKLmcpKlHcO3F0QF9lT9X&sz=w800" alt="Sterling Fleet Outfitters" class="logo-light">
+      <img src="https://drive.google.com/thumbnail?id=14_GFXNHdDp7mJmMkvlX334lx8MdH_Z8F&sz=w800" alt="Sterling Fleet Outfitters" class="logo-dark">
+    </div>
+    <h2 style="color: var(--text-main); margin-bottom: 5px; font-size: 22px;">Dealer Portal</h2>
+    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 30px;">Enter your credentials to access the CPQ system.</p>
+    
+    <div class="input-group" style="text-align: left; margin-bottom: 20px;">
+      <label>Username</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" id="login-username" placeholder="Enter username" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease;">
+      </div>
+    </div>
+
+    <div class="input-group" style="text-align: left; margin-bottom: 30px;">
+      <label>Passcode</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" id="login-passcode" placeholder="4-Digit Code" maxlength="4" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease; letter-spacing: 5px; text-align: center;">
+      </div>
+    </div>
+
+    <button id="login-btn" onclick="handleLogin()" class="btn-confirm" style="width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-right-to-bracket"></i> Secure Login
+    </button>
+    <div id="login-error" style="color: #e74c3c; font-size: 13px; margin-top: 15px; display: none; font-weight: 600; background: rgba(231, 76, 60, 0.1); padding: 10px; border-radius: 8px;"></div>
+  </div>
+
+  <div class="glass-panel" id="main-app-container" style="display: none;">
+    <div class="action-buttons-container">
+      <button class="theme-btn" onclick="toggleTheme()" title="Switch Theme">
+        <i class="fa-solid fa-moon theme-icon-class"></i>
+      </button>
+      <button class="reset-btn" onclick="requestFullReset()"><i class="fa-solid fa-rotate-right"></i> Start Over</button>
+    </div>
+    <div class="header">
+      <div class="logo-container">
+        <img src="https://drive.google.com/thumbnail?id=1RNVjlJ816sBAKLmcpKlHcO3F0QF9lT9X&sz=w800" alt="Sterling Fleet Outfitters" class="logo-light">
+        <img src="https://drive.google.com/thumbnail?id=14_GFXNHdDp7mJmMkvlX334lx8MdH_Z8F&sz=w800" alt="Sterling Fleet Outfitters" class="logo-dark">
+      </div>
+      <p style="margin-top: 8px; color: var(--gold-primary); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; font-size: 12px;">REALTRUCK Dealer Price Configurator</p>
+    </div>
+
+    <div id="dashboard-view" style="display: block;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="color: var(--text-main); font-size: 18px;">Welcome, <span id="user-greeting">User</span></h3>
+        <div style="display: flex; gap: 10px;">
+          <button id="admin-panel-btn" class="teleport-btn" onclick="openAdminModal()" style="display: none; margin-left: 0; padding: 8px 15px; border-radius: 8px; font-size: 13px;"><i class="fa-solid fa-users-gear"></i> Manage Users</button>
+          <button class="btn-confirm" onclick="openIntakeModal()" style="font-size: 13px; padding: 8px 15px; border-radius: 8px;"><i class="fa-solid fa-plus"></i> New Quote</button>
+        </div>
+      </div>
+      
+      <div id="quotes-list-container" style="background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; min-height: 200px;">
+        </div>
+    </div>
+
+    <div id="configurator-view" style="display: none;">
+      
+      <div id="client-info-banner" style="background: rgba(27, 76, 150, 0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-size: 11px; color: var(--gold-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Client</span><br>
+          <span id="display-client-name" style="font-size: 15px; color: var(--text-main); font-weight: 600;"></span>
+        </div>
+        <button onclick="backToDashboard()" class="theme-btn" style="border: none; background: transparent; font-size: 12px; padding: 4px; box-shadow: none;"><i class="fa-solid fa-arrow-left"></i> Dashboard</button>
+      </div>
+
+    <div id="loading" class="loader-container">
+      <div class="loader"></div>
+      <span style="margin-left: 10px; color: var(--gold-primary); font-size: 14px;">Syncing Database...</span>
+    </div>
+
+    <div id="app-content">
+      <div class="input-group">
+        <label>1. Select Truck Make</label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-industry"></i>
+          <select id="makeSelect" onchange="handleMakeChange()">
+            <option value="">-- Choose Make --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>2. Select Truck Model</label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-car-side"></i>
+          <select id="modelSelect" onchange="handleModelChange()" disabled>
+            <option value="">-- Choose Model --</option>
+          </select>
+        </div>
+        <div id="sizeChip" class="size-chip"><i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> <span></span></div>
+      </div>
+      <input type="hidden" id="sizeCategory" value="">
+
+      <div id="dynamic-options" class="hidden-step">
+        <div class="input-group">
+          <label>3. Select Cap Type</label>
+          <div class="toggle-group">
+            <input type="radio" id="type-fiberglass" name="capType" value="Fiberglass" onchange="handleCapTypeChange()" checked>
+            <label for="type-fiberglass" class="toggle-label"><i class="fa-solid fa-layer-group"></i> Fiberglass</label>
+            
+            <input type="radio" id="type-commercial" name="capType" value="Commercial" onchange="handleCapTypeChange()">
+            <label for="type-commercial" class="toggle-label"><i class="fa-solid fa-toolbox"></i> Commercial Aluminum</label>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>4. Select Bed Length</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-ruler-horizontal"></i>
+            <select id="bedLengthSelect" onchange="handleBedLengthChange()">
+              <option value="">-- Choose Bed Length --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group" id="capModelGroup" style="display:none;">
+          <label>5. Select Cap Model</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+            <select id="capModelSelect" onchange="handleCapModelChange()">
+              <option value="">-- Choose Cap Model --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="scroll-anchor"></div>
+      <div id="options-container"></div>
+
+      <div id="quote-dashboard" style="flex-direction: column; align-items: stretch; gap: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="quote-labels">
+            <span class="quote-title">Estimated Total</span>
+            <span class="quote-base">Base Price: <span id="base-price-display">$0.00</span></span>
+            <span class="quote-base" style="margin-top: 2px;">Freight: <span id="freight-price-display">$170.00</span></span>
+            <div id="surcharge-messages"></div>
+          </div>
+          <div class="quote-total" id="total-price-display">$0.00</div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; width: 100%;">
+          <button id="save-quote-btn" onclick="saveQuote()" class="btn-confirm" style="flex: 2; padding: 12px; font-size: 14px;"><i class="fa-solid fa-floppy-disk"></i> Save Quote</button>
+          <button id="print-quote-btn" onclick="printQuote()" class="btn-cancel" style="flex: 1; padding: 12px; font-size: 14px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="intake-modal">
+    <div class="modal-content" style="max-width: 400px; text-align: left;">
+      <h3 style="margin-bottom: 5px;">New Quote Request</h3>
+      <p style="margin-bottom: 25px;">Please enter the client's information.</p>
+      
+      <div class="input-group">
+        <label>Client Name *</label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-user-tag"></i>
+          <input type="text" id="intake-name" placeholder="Required" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none; transition: border 0.3s;">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Phone Number <span style="font-size: 10px; color: var(--text-muted);">(Optional)</span></label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-phone"></i>
+          <input type="tel" id="intake-phone" placeholder="Optional" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none;">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Email Address <span style="font-size: 10px; color: var(--text-muted);">(Optional)</span></label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="intake-email" placeholder="Optional" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none;">
+        </div>
+      </div>
+
+      <div class="modal-buttons" style="margin-top: 30px;">
+        <button class="btn-cancel" onclick="closeIntakeModal()" style="flex: 1;">Cancel</button>
+        <button class="btn-confirm" onclick="startNewQuote()" style="flex: 2;">Begin Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="admin-modal">
+    <div class="modal-content" style="max-width: 500px; width: 90%; text-align: left;">
+      <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-users-gear"></i> User Management</h3>
+      
+      <div id="admin-user-list" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px;">
+        <div style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+        <input type="text" id="new-user-name" placeholder="New Username" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
+        <input type="text" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center;">
+        <button class="btn-confirm" onclick="addNewUser()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeAdminModal()" style="width: 100%;">Close Panel</button>
+      </div>
+    </div>
+  </div>
+
+    </div>
+  </div>
+
+  <script>
+    let globalTruckData = [];
+    let fiberglassBaseData = [];
+    let commercialBaseData = [];
+    let logicRulesData = []; // Store the Surcharge Rules
+
+    let currentUser = null; // Globally store logged-in user data
+
+    // --- LOGIN LOGIC ---
+    function handleLogin() {
+      const user = document.getElementById('login-username').value.trim();
+      const pass = document.getElementById('login-passcode').value.trim();
+      const btn = document.getElementById('login-btn');
+      const errorDiv = document.getElementById('login-error');
+      
+      if (!user || !pass) {
+        errorDiv.textContent = "Please enter both Username and Passcode.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      // Show loading state
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+      btn.disabled = true;
+      errorDiv.style.display = "none";
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (response.success) {
+            currentUser = response;
+            document.getElementById('user-greeting').innerText = currentUser.name;
+            
+            // Phase 6: Show Admin button if authorized
+            if (currentUser.role === 'Admin') {
+              document.getElementById('admin-panel-btn').style.display = 'inline-flex';
+            }
+            
+            // Transition: Hide Login, Show Main App (Dashboard Default)
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app-container').style.display = 'block'; 
+            
+            // Trigger Dashboard Data Load
+            fetchDashboardQuotes();
+          } else {
+            // Failed Login
+            errorDiv.textContent = response.message;
+            errorDiv.style.display = "block";
+            btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Secure Login';
+            btn.disabled = false;
+          }
+        })
+        .withFailureHandler(function(error) {
+          errorDiv.textContent = "Connection failed. Please try again.";
+          errorDiv.style.display = "block";
+          btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Secure Login';
+          btn.disabled = false;
+        })
+        .verifyLogin(user, pass);
+    }
+
+    // --- DASHBOARD & INTAKE LOGIC ---
+    let currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
+
+    function fetchDashboardQuotes() {
+      const container = document.getElementById('quotes-list-container');
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); margin-top: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; color: var(--gold-primary);"></i><br>Fetching History...</div>';
+      
+      google.script.run
+        .withSuccessHandler(renderDashboardQuotes)
+        .withFailureHandler(() => { container.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Failed to load quotes.</div>'; })
+        .getDashboardQuotes();
+    }
+
+    function renderDashboardQuotes(quotes) {
+      const container = document.getElementById('quotes-list-container');
+      
+      if (!quotes || quotes.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px 20px;"><i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i><br>No quotes found. Click "New Quote" to get started.</div>';
+        return;
+      }
+      
+      let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+      quotes.forEach(q => {
+        html += `
+          <div style="background: var(--input-bg); border: 1px solid var(--glass-border); padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 10px var(--gold-glow)';" onmouseout="this.style.boxShadow='none';" onclick="loadQuote('${q.quoteId}')">
+            <div>
+              <div style="font-weight: 600; color: var(--text-main); font-size: 15px;">${q.clientName || 'Unknown Client'} <span style="font-size: 11px; background: rgba(27, 76, 150, 0.1); color: var(--gold-primary); padding: 2px 6px; border-radius: 4px; margin-left: 5px; border: 1px solid var(--gold-primary);">${q.quoteId}</span></div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><i class="fa-solid fa-truck"></i> ${q.make} ${q.model} - ${q.capType}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 600; color: var(--gold-primary);">${q.totalPrice ? '$' + parseFloat(q.totalPrice).toFixed(2) : '-'}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${new Date(q.date).toLocaleDateString()}</div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function openIntakeModal() {
+      document.getElementById('intake-name').value = '';
+      document.getElementById('intake-phone').value = '';
+      document.getElementById('intake-email').value = '';
+      document.getElementById('intake-name').style.borderColor = 'var(--glass-border)';
+      document.getElementById('intake-modal').classList.add('active');
+    }
+
+    function closeIntakeModal() {
+      document.getElementById('intake-modal').classList.remove('active');
+    }
+
+    function startNewQuote() {
+      const name = document.getElementById('intake-name').value.trim();
+      if (!name) {
+        document.getElementById('intake-name').style.borderColor = '#e74c3c';
+        return;
+      }
+      
+      currentQuoteData = {
+        clientName: name,
+        clientPhone: document.getElementById('intake-phone').value.trim(),
+        clientEmail: document.getElementById('intake-email').value.trim(),
+        quoteId: null, // Null means this is a brand new quote
+        revisionOf: null
+      };
+      
+      document.getElementById('display-client-name').innerText = name;
+      closeIntakeModal();
+      
+      requestFullReset(); // Ensure the configurator is completely blank
+      
+      // Swap Views
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('configurator-view').style.display = 'block';
+    }
+
+    function backToDashboard() {
+      document.getElementById('configurator-view').style.display = 'none';
+      document.getElementById('dashboard-view').style.display = 'block';
+      fetchDashboardQuotes();
+    }
+    
+    let globalQuotesList = []; // Stores dashboard quotes for loading
+
+    // --- PHASE 4: LOAD ENGINE (ASYNCHRONOUS REBUILD) ---
+    function loadQuote(id) {
+      const q = globalQuotesList.find(x => x.quoteId === id);
+      if (!q) return;
+
+      currentQuoteData = {
+        clientName: q.clientName, clientPhone: q.clientPhone || '', clientEmail: q.clientEmail || '',
+        quoteId: q.quoteId, revisionOf: q.quoteId
+      };
+      
+      document.getElementById('display-client-name').innerHTML = `${q.clientName} <span style="font-size:10px; color:var(--text-muted);">(Loaded: ${q.quoteId})</span>`;
+      
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('configurator-view').style.display = 'block';
+      
+      requestFullReset();
+
+      document.getElementById('options-container').innerHTML = '<div class="loader-container"><div class="loader"></div><span style="margin-left:10px;color:var(--gold-primary);">Rebuilding Quote...</span></div>';
+
+      // 1. Sync: Set Make
+      document.getElementById('makeSelect').value = q.make;
+      handleMakeChange(); 
+
+      // 2. Async check: Fetch base tables if not loaded
+      document.getElementById('modelSelect').value = q.model;
+      if (fiberglassBaseData.length === 0 || commercialBaseData.length === 0) {
+        google.script.run.withSuccessHandler(data => {
+          fiberglassBaseData = data;
+          google.script.run.withSuccessHandler(commData => {
+            commercialBaseData = commData;
+            continueLoadSequence(q); // Trigger Phase 2 once data is ready
+          }).getCommercialBaseTable();
+        }).getFiberglassBaseTable();
+      } else {
+        continueLoadSequence(q);
+      }
+    }
+
+    function continueLoadSequence(q) {
+      // 3. Sync: Trigger Model logic
+      document.getElementById('sizeCategory').value = q.sizeCategory;
+      if(document.getElementById('sizeChip')) {
+        document.getElementById('sizeChip').querySelector('span').innerText = q.sizeCategory;
+        document.getElementById('sizeChip').classList.add('visible');
+      }
+      document.getElementById('dynamic-options').classList.remove('hidden-step');
+      document.getElementById('dynamic-options').classList.add('visible-step');
+
+      // 4. Sync: Set Cap Type & Bed Length
+      if(String(q.capType).toLowerCase() === 'commercial') {
+        document.getElementById('type-commercial').checked = true;
+      } else {
+        document.getElementById('type-fiberglass').checked = true;
+      }
+      populateBedLengths(document.querySelector('input[name="capType"]:checked').value);
+      
+      document.getElementById('bedLengthSelect').value = q.bedLength;
+      handleBedLengthChange(); 
+
+      // 5. Sync: Set Cap Model & Base Price
+      document.getElementById('capModelSelect').value = q.capModel;
+      
+      const capType = document.querySelector('input[name="capType"]:checked').value;
+      const sizeCategory = document.getElementById('sizeCategory').value;
+      let searchModel = q.capModel;
+      if (capType === 'Commercial') { searchModel = q.capModel.split(' (')[0]; }
+
+      let baseData = capType === 'Fiberglass' ? fiberglassBaseData : commercialBaseData;
+      currentBasePrice = 0;
+      if (capType === 'Fiberglass') {
+        let match = baseData.find(item => item['Size Category'] === sizeCategory && item['Bed Length'] === q.bedLength);
+        if (match) currentBasePrice = parseFloat(match[searchModel]) || 0;
+      } else {
+        let searchHeight = q.capModel.split(' (')[1].replace(')', '');
+        let match = baseData.find(item => item['Size Category'] === sizeCategory && item['Bed Length'] === q.bedLength && item['Cap Model'] === searchModel);
+        if (match) currentBasePrice = parseFloat(match[searchHeight]) || 0;
+      }
+      document.getElementById('base-price-display').innerText = '$' + currentBasePrice.toFixed(2);
+      document.getElementById('quote-dashboard').style.display = 'flex';
+      saveValidState();
+
+      // 6. Async: Fetch Options HTML and apply JSON State
+      if (capType === 'Fiberglass') {
+        google.script.run.withSuccessHandler(optionsData => {
+          renderOptions(optionsData);
+          applyLoadedStateJSON(q.configStateJSON);
+        }).getFiberglassOptions(sizeCategory, searchModel);
+      } else {
+        google.script.run.withSuccessHandler(optionsData => {
+          renderOptions(optionsData);
+          applyLoadedStateJSON(q.configStateJSON);
+        }).getCommercialOptions(sizeCategory, searchModel);
+      }
+    }
+
+    function applyLoadedStateJSON(jsonStr) {
+      try {
+        let state = JSON.parse(jsonStr || '{}');
+        if (state.options) {
+          for (const [optId, isChecked] of Object.entries(state.options)) {
+            const cb = document.getElementById(optId);
+            if (cb) {
+              cb.checked = isChecked;
+              let isExclusive = cb.getAttribute('data-exclusive') === 'true';
+              let safeCat = Array.from(cb.classList).find(c => c.startsWith('cat-')).replace('cat-', '');
+              handleExclusivity(cb, safeCat, isExclusive); // Trigger visual updates
+            }
+          }
+        }
+        if (state.quantities) {
+          for (const [qtyId, val] of Object.entries(state.quantities)) {
+            const qEl = document.getElementById(qtyId);
+            if (qEl) qEl.value = val;
+          }
+        }
+        calculateTotal();
+      } catch(e) { console.error('Error parsing config state', e); }
+      
+      const printBtn = document.getElementById('print-quote-btn');
+      if (printBtn) { printBtn.disabled = true; printBtn.style.opacity = '0.5'; printBtn.style.cursor = 'not-allowed'; }
+    }
+
+    // Capture global quotes when fetching
+    const originalRenderDashboardQuotes = renderDashboardQuotes;
+    renderDashboardQuotes = function(quotes) {
+      globalQuotesList = quotes || [];
+      originalRenderDashboardQuotes(quotes);
+    };
+
+    // --- PHASE 3: SAVE ENGINE ---
+    function saveQuote() {
+      const saveBtn = document.getElementById('save-quote-btn');
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+      saveBtn.disabled = true;
+
+      // 1. Gather all UI selections into JSON
+      let configState = { options: {}, quantities: {} };
+      document.querySelectorAll('.option-checkbox').forEach(cb => {
+        if (cb.checked) {
+          configState.options[cb.id] = true;
+          let qtyId = cb.getAttribute('data-qty-id');
+          if (qtyId) configState.quantities[qtyId] = document.getElementById(qtyId).value;
+        }
+      });
+      
+      // 2. Gather base truck data
+      let dbPayload = {
+        quoteId: currentQuoteData.quoteId, revisionOf: currentQuoteData.revisionOf, createdBy: currentUser.name,
+        clientName: currentQuoteData.clientName, clientPhone: currentQuoteData.clientPhone, clientEmail: currentQuoteData.clientEmail,
+        make: document.getElementById('makeSelect').value, model: document.getElementById('modelSelect').value,
+        sizeCategory: document.getElementById('sizeChip').innerText.trim(), capType: document.querySelector('input[name="capType"]:checked').value,
+        bedLength: document.getElementById('bedLengthSelect').value, capModel: document.getElementById('capModelSelect').value,
+        totalPrice: document.getElementById('total-price-display').innerText.replace('$','').replace(',','')
+      };
+
+      // 3. Send to Google Sheets
+      google.script.run
+        .withSuccessHandler(function(res) {
+          saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
+          setTimeout(() => { saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Quote'; saveBtn.disabled = false; }, 2000);
+          
+          if (res.success) {
+            // Success! Update local tracking so next save makes a new revision
+            currentQuoteData.quoteId = res.newQuoteId; 
+            currentQuoteData.revisionOf = res.newQuoteId; 
+            document.getElementById('display-client-name').innerHTML = `${currentQuoteData.clientName} <span style="font-size:10px; color:var(--text-muted);">(Saved: ${res.newQuoteId})</span>`;
+            
+            // Unlock Print Button
+            const printBtn = document.getElementById('print-quote-btn');
+            printBtn.disabled = false; printBtn.style.opacity = '1'; printBtn.style.cursor = 'pointer';
+          } else { alert("Error saving: " + res.message); }
+        })
+        .saveQuoteToDB(dbPayload, JSON.stringify(configState));
+    }
+
+    // --- PHASE 6: ADMIN ENGINE ---
+    function openAdminModal() {
+      document.getElementById('admin-modal').classList.add('active');
+      const list = document.getElementById('admin-user-list');
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading Users...</div>';
+      
+      google.script.run.withSuccessHandler(renderAdminUsers).getAdminUsersDB();
+    }
+    
+    function closeAdminModal() { document.getElementById('admin-modal').classList.remove('active'); }
+
+    function renderAdminUsers(users) {
+      const list = document.getElementById('admin-user-list');
+      if(users.length === 0) { list.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No standard users found.</div>'; return; }
+      
+      let html = '';
+      users.forEach(u => {
+        html += `<div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--glass-border); font-size: 13px;">
+          <div><strong style="color: var(--text-main);">${u.username}</strong> <span style="color: var(--gold-primary); font-size: 11px;">(${u.id})</span></div>
+          <div style="color: var(--text-muted);">Pass: ${u.passcode} | Status: <span style="color: ${u.status === 'Active' ? '#2ecc71' : '#e74c3c'};">${u.status}</span></div>
+        </div>`;
+      });
+      list.innerHTML = html;
+    }
+
+    function addNewUser() {
+      const name = document.getElementById('new-user-name').value.trim();
+      const pass = document.getElementById('new-user-pass').value.trim();
+      if(!name || pass.length !== 4) { alert("Please enter a username and a 4-digit passcode."); return; }
+      
+      document.getElementById('new-user-name').value = 'Saving...';
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) {
+          document.getElementById('new-user-name').value = '';
+          document.getElementById('new-user-pass').value = '';
+          openAdminModal(); // Refresh list
+        } else { alert("Failed to add user."); }
+      }).saveNewUserDB(name, pass);
+    }
+
+    // Stub for PDF
+    function printQuote() { alert("PDF Generation is coming in Step 5!"); }
+
+    // --- THEME TOGGLE LOGIC ---
+    function toggleTheme() {
+      const body = document.documentElement;
+      const currentTheme = body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('realtruck_theme', newTheme);
+      
+      // Update all theme icons on screen (Login + App)
+      const icons = document.querySelectorAll('.theme-icon-class');
+      icons.forEach(icon => {
+        icon.className = newTheme === 'dark' ? 'fa-solid fa-sun theme-icon-class' : 'fa-solid fa-moon theme-icon-class';
+      });
+    }
+
+    // Initialize App
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load Saved Theme Immediately
+      const savedTheme = localStorage.getItem('realtruck_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      const icons = document.querySelectorAll('.theme-icon-class');
+      if(savedTheme === 'dark') {
+        icons.forEach(icon => icon.className = 'fa-solid fa-sun theme-icon-class');
+      }
+
+      // Fetch Logic Rules in the background
+      google.script.run.withSuccessHandler(data => { logicRulesData = data; }).getLogicRules();
+
+      // Pre-load configurator data quietly in the background while user logs in
+      google.script.run.withSuccessHandler(initializeUI).withFailureHandler(showError).getTruckData();
+    });
+
+    // Run when data successfully returns from Sheets
+    function initializeUI(data) {
+      globalTruckData = data;
+      
+      // Extract unique makes and filter out any blank rows from Google Sheets
+      const makes = [...new Set(
+        data.map(item => String(item['Make'] || '').trim())
+            .filter(make => make !== '')
+      )].sort();
+      
+      const makeSelect = document.getElementById('makeSelect');
+      makes.forEach(make => {
+        let option = document.createElement('option');
+        option.value = make;
+        option.textContent = make;
+        makeSelect.appendChild(option);
+      });
+
+      // Hide loader, show app
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app-content').style.display = 'block';
+    }
+
+    function showError(error) {
+      document.getElementById('loading').innerHTML = `<span style="color: #ff4c4c;"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${error.message}</span>`;
+    }
+
+    // --- RESET AND STATE MANAGEMENT ---
+    let lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
+    let currentBasePrice = 0;
+
+    function saveValidState() {
+      lastValidState.make = document.getElementById('makeSelect').value;
+      lastValidState.model = document.getElementById('modelSelect').value;
+      lastValidState.sizeCategory = document.getElementById('sizeCategory').value;
+      const typeInput = document.querySelector('input[name="capType"]:checked');
+      lastValidState.capType = typeInput ? typeInput.value : 'Fiberglass';
+      lastValidState.bedLength = document.getElementById('bedLengthSelect').value;
+      lastValidState.capModel = document.getElementById('capModelSelect').value;
+      updateStickySummary();
+    }
+
+    function confirmReset(fieldId, revertValue, proceedCallback) {
+      const optionsContainer = document.getElementById('options-container');
+      const hasOptions = optionsContainer.innerHTML.trim() !== '' && !optionsContainer.innerHTML.includes('Loading');
+      
+      if (hasOptions) {
+        const modal = document.getElementById('reset-modal');
+        modal.classList.add('active');
+        
+        window.resolveModal = function(confirmed) {
+          modal.classList.remove('active');
+          if (confirmed) {
+            optionsContainer.innerHTML = '';
+            document.getElementById('quote-dashboard').style.display = 'none';
+            currentBasePrice = 0;
+            calculateTotal();
+            proceedCallback();
+            saveValidState();
+          } else {
+            if (fieldId === 'capType') {
+              document.querySelector(`input[name="capType"][value="${revertValue}"]`).checked = true;
+            } else {
+              document.getElementById(fieldId).value = revertValue;
+            }
+          }
+        }
+      } else {
+        proceedCallback();
+        saveValidState();
+      }
+    }
+
+    function requestFullReset() {
+      confirmReset('fullReset', null, () => {
+        document.getElementById('makeSelect').value = '';
+        document.getElementById('modelSelect').innerHTML = '<option value="">-- Choose Model --</option>';
+        document.getElementById('modelSelect').disabled = true;
+        document.getElementById('sizeCategory').value = '';
+        if (document.getElementById('sizeChip')) document.getElementById('sizeChip').classList.remove('visible');
+        document.getElementById('type-fiberglass').checked = true;
+        document.getElementById('bedLengthSelect').innerHTML = '<option value="">-- Choose Bed Length --</option>';
+        document.getElementById('capModelSelect').innerHTML = '<option value="">-- Choose Cap Model --</option>';
+        document.getElementById('capModelGroup').style.display = 'none';
+        document.getElementById('dynamic-options').classList.remove('visible-step');
+        document.getElementById('dynamic-options').classList.add('hidden-step');
+        document.getElementById('sticky-summary').classList.remove('visible');
+      });
+    }
+
+    function updateStickySummary() {
+      const sticky = document.getElementById('sticky-summary');
+      if (lastValidState.capModel) {
+        sticky.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 15px;">
+              <i class="fa-solid fa-truck" style="margin-right: 6px; color: var(--gold-primary);"></i> 
+              ${lastValidState.make} | ${lastValidState.model} (${lastValidState.sizeCategory}) | ${lastValidState.capType} | ${lastValidState.bedLength} | ${lastValidState.capModel}
+            </span>
+            <button onclick="requestFullReset()" style="background: rgba(255,0,0,0.1); color: #ff4c4c; border: 1px solid rgba(255,76,76,0.3); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; flex-shrink: 0; transition: all 0.2s; display: flex; align-items: center; gap: 5px;" onmouseover="this.style.background='rgba(255,0,0,0.2)'; this.style.boxShadow='0 0 10px rgba(255,76,76,0.4)';" onmouseout="this.style.background='rgba(255,0,0,0.1)'; this.style.boxShadow='none';">
+              <i class="fa-solid fa-rotate-right"></i> Reset
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    window.addEventListener('scroll', () => {
+      const anchor = document.getElementById('scroll-anchor');
+      const sticky = document.getElementById('sticky-summary');
+      if (!anchor || !sticky) return;
+      if (anchor.getBoundingClientRect().top < 0 && lastValidState.capModel) {
+        sticky.classList.add('visible');
+      } else {
+        sticky.classList.remove('visible');
+      }
+    });
+
+    // Handle Make Selection
+    function handleMakeChange() {
+      confirmReset('makeSelect', lastValidState.make, () => {
+        const selectedMake = document.getElementById('makeSelect').value;
+        const modelSelect = document.getElementById('modelSelect');
+        
+        modelSelect.innerHTML = '<option value="">-- Choose Model --</option>';
+        document.getElementById('sizeCategory').value = '';
+        if (document.getElementById('sizeChip')) document.getElementById('sizeChip').classList.remove('visible');
+        
+        if (selectedMake) {
+          const filteredModels = globalTruckData.filter(item => item['Make'] === selectedMake);
+          filteredModels.forEach(truck => {
+            let option = document.createElement('option');
+            option.value = truck['Model'];
+            option.textContent = truck['Model'];
+            option.dataset.size = truck['Size Category']; 
+            modelSelect.appendChild(option);
+          });
+          modelSelect.disabled = false;
+        } else {
+          modelSelect.disabled = true;
+        }
+        document.getElementById('dynamic-options').classList.remove('visible-step');
+        document.getElementById('dynamic-options').classList.add('hidden-step');
+      });
+    }
+
+    // Handle Model Selection
+    function handleModelChange() {
+      confirmReset('modelSelect', lastValidState.model, () => {
+        const modelSelect = document.getElementById('modelSelect');
+        const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+        const sizeCategory = selectedOption ? selectedOption.dataset.size : '';
+        
+        if (sizeCategory) {
+          document.getElementById('sizeCategory').value = sizeCategory;
+          
+          const chip = document.getElementById('sizeChip');
+          if (chip) {
+            chip.querySelector('span').innerText = sizeCategory;
+            chip.classList.add('visible');
+          }
+          
+          if (fiberglassBaseData.length === 0 || commercialBaseData.length === 0) {
+            document.getElementById('loading').style.display = 'flex';
+            google.script.run.withSuccessHandler(data => {
+              fiberglassBaseData = data;
+              google.script.run.withSuccessHandler(commData => {
+                commercialBaseData = commData;
+                document.getElementById('loading').style.display = 'none';
+                revealDynamicOptions();
+              }).getCommercialBaseTable();
+            }).getFiberglassBaseTable();
+          } else {
+            revealDynamicOptions();
+          }
+        } else {
+          document.getElementById('dynamic-options').classList.remove('visible-step');
+          document.getElementById('dynamic-options').classList.add('hidden-step');
+        }
+      });
+    }
+
+    function revealDynamicOptions() {
+      const dynamicSection = document.getElementById('dynamic-options');
+      dynamicSection.classList.remove('hidden-step');
+      dynamicSection.classList.add('visible-step');
+      
+      // Temporarily bypass confirmReset to cleanly populate dependents
+      const capType = document.querySelector('input[name="capType"]:checked').value;
+      populateBedLengths(capType);
+    }
+
+    function handleCapTypeChange() {
+      confirmReset('capType', lastValidState.capType, () => {
+        const capType = document.querySelector('input[name="capType"]:checked').value;
+        populateBedLengths(capType);
+      });
+    }
+    
+    function populateBedLengths(capType) {
+      const sizeCategory = document.getElementById('sizeCategory').value;
+      const bedLengthSelect = document.getElementById('bedLengthSelect');
+      
+      bedLengthSelect.innerHTML = '<option value="">-- Choose Bed Length --</option>';
+      document.getElementById('capModelSelect').innerHTML = '<option value="">-- Choose Cap Model --</option>';
+      document.getElementById('capModelGroup').style.display = 'none';
+      
+      let baseData = capType === 'Fiberglass' ? fiberglassBaseData : commercialBaseData;
+      const availableBeds = [...new Set(baseData.filter(item => item['Size Category'] === sizeCategory).map(item => item['Bed Length']))];
+      
+      availableBeds.forEach(bed => {
+        let option = document.createElement('option');
+        option.value = bed;
+        option.textContent = bed;
+        bedLengthSelect.appendChild(option);
+      });
+    }
+
+    function handleBedLengthChange() {
+      confirmReset('bedLengthSelect', lastValidState.bedLength, () => {
+        const sizeCategory = document.getElementById('sizeCategory').value;
+        const capType = document.querySelector('input[name="capType"]:checked').value;
+        const bedLength = document.getElementById('bedLengthSelect').value;
+        const capModelSelect = document.getElementById('capModelSelect');
+        
+        capModelSelect.innerHTML = '<option value="">-- Choose Cap Model --</option>';
+        
+        if (bedLength) {
+          let baseData = capType === 'Fiberglass' ? fiberglassBaseData : commercialBaseData;
+          let availableModels = [];
+
+          if (capType === 'Fiberglass') {
+            const row = baseData.find(item => item['Size Category'] === sizeCategory && item['Bed Length'] === bedLength);
+            if (row) {
+              const models = ["APEX FGC-5000", "Z2", "Z", "CX Revo", "CX Evolve", "CX HD", "CX Classic", "Overland", "V Classic", "MX Revo", "MX Evolve", "MX HD", "MX Classic", "TW Classic"];
+              models.forEach(model => {
+                if (parseFloat(row[model]) > 0) availableModels.push(model);
+              });
+            }
+          } else {
+            const rows = baseData.filter(item => item['Size Category'] === sizeCategory && item['Bed Length'] === bedLength);
+            // Updated to exactly match your Google Sheet column headers
+            const heights = ["20 inch", "23 inch", "26 inch", "29 inch", "36 inch", "23/29 Wedge", "26/32 Wedge", "30/36 Wedge"];
+            
+            rows.forEach(row => {
+              heights.forEach(height => {
+                 // Check if the cell has a price (meaning this dimension exists for this cap)
+                 if (parseFloat(row[height]) > 0) {
+                   availableModels.push(`${row['Cap Model']} (${height})`);
+                 }
+              });
+            });
+          }
+          
+          availableModels.forEach(model => {
+            let option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            capModelSelect.appendChild(option);
+          });
+          
+          document.getElementById('capModelGroup').style.display = 'block';
+        } else {
+          document.getElementById('capModelGroup').style.display = 'none';
+        }
+      });
+    }
+
+    function handleCapModelChange() {
+      const sizeCategory = document.getElementById('sizeCategory').value;
+      const capType = document.querySelector('input[name="capType"]:checked').value;
+      const bedLength = document.getElementById('bedLengthSelect').value;
+      const capModelRaw = document.getElementById('capModelSelect').value;
+      
+      const optionsContainer = document.getElementById('options-container');
+      const quoteDashboard = document.getElementById('quote-dashboard');
+      
+      if (!capModelRaw) {
+        optionsContainer.innerHTML = '';
+        quoteDashboard.style.display = 'none';
+        saveValidState();
+        return;
+      }
+
+      // 1. Calculate Base Price
+      let searchModel = capModelRaw;
+      let searchHeight = "";
+      
+      if (capType === 'Commercial') {
+         const parts = capModelRaw.split(' (');
+         searchModel = parts[0];
+         searchHeight = parts[1].replace(')', '');
+      }
+
+      let baseData = capType === 'Fiberglass' ? fiberglassBaseData : commercialBaseData;
+      currentBasePrice = 0;
+
+      if (capType === 'Fiberglass') {
+        let match = baseData.find(item => item['Size Category'] === sizeCategory && item['Bed Length'] === bedLength);
+        if (match) currentBasePrice = parseFloat(match[searchModel]) || 0;
+      } else {
+        let match = baseData.find(item => item['Size Category'] === sizeCategory && item['Bed Length'] === bedLength && item['Cap Model'] === searchModel);
+        if (match) currentBasePrice = parseFloat(match[searchHeight]) || 0;
+      }
+      
+      document.getElementById('base-price-display').innerText = '$' + currentBasePrice.toFixed(2);
+      calculateTotal();
+      quoteDashboard.style.display = 'flex';
+      saveValidState(); // Save state since this marks a completed base setup
+
+      // 2. Fetch Options
+      optionsContainer.innerHTML = '<div class="loader-container" style="margin-top:20px;"><div class="loader"></div><span style="margin-left:10px;color:var(--gold-primary);">Loading Add-ons...</span></div>';
+      
+      if (capType === 'Fiberglass') {
+        google.script.run.withSuccessHandler(renderOptions).getFiberglassOptions(sizeCategory, searchModel);
+      } else {
+        google.script.run.withSuccessHandler(renderOptions).getCommercialOptions(sizeCategory, searchModel);
+      }
+    }
+    // --- IMAGE POPOVER CLICK LOGIC ---
+    function toggleImagePopover(triggerElement, event) {
+      event.preventDefault();
+      event.stopPropagation(); // Prevents the row from checking/unchecking when clicking the image icon
+      
+      const popover = triggerElement.querySelector('.image-popover-content');
+      
+      // Close any other open popovers first
+      document.querySelectorAll('.image-popover-content.active').forEach(p => {
+        if (p !== popover) p.classList.remove('active');
+      });
+
+      // Toggle the clicked one
+      if (popover) {
+        popover.classList.toggle('active');
+      }
+    }
+
+    // Close popovers if the user clicks anywhere else on the screen
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.image-popover-content.active').forEach(p => {
+        p.classList.remove('active');
+      });
+    });
+
+    function renderOptions(optionsData) {
+      const capType = document.querySelector('input[name="capType"]:checked').value;
+      const capModelRaw = document.getElementById('capModelSelect').value;
+      const optionsContainer = document.getElementById('options-container');
+      
+      if (!optionsData || optionsData.length === 0) {
+        optionsContainer.innerHTML = '<p style="color:var(--text-muted); text-align:center; margin-top: 20px;">No additional options found for this model.</p>';
+        return;
+      }
+      
+      // DEBUGGER: Print the exact data structure to the console
+      console.log("RAW DATA CHECK (First Option):", optionsData[0]);
+
+      // Extract raw model name for Commercial columns
+      let searchModel = capModelRaw;
+      if (capType === 'Commercial') {
+         searchModel = capModelRaw.split(' (')[0];
+      }
+
+      // Group options by Category
+      const groupedOptions = {};
+      optionsData.forEach(opt => {
+        const cat = opt['Option Category'] || opt['Category'] || 'General Add-ons';
+        if (!groupedOptions[cat]) groupedOptions[cat] = [];
+        groupedOptions[cat].push(opt);
+      });
+
+      let html = '<h3 style="color:var(--gold-primary); margin: 30px 0 15px; font-size: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; text-transform:uppercase; letter-spacing: 1px;"><i class="fa-solid fa-sliders"></i> Customization Engine</h3>';
+      
+      for (const [category, items] of Object.entries(groupedOptions)) {
+        html += `<div class="option-category"><h4 style="margin-bottom: 15px; color: var(--text-main); font-weight: 600; font-size: 15px;">${category}</h4>`;
+        
+        // Sort items: 'Exclusive' first, then 'Included' second
+        items.sort((a, b) => {
+          const aExclusive = String(a['Selection Type'] || '').trim().toLowerCase() === 'exclusive';
+          const bExclusive = String(b['Selection Type'] || '').trim().toLowerCase() === 'exclusive';
+          if (aExclusive && !bExclusive) return -1;
+          if (!aExclusive && bExclusive) return 1;
+          
+          const aInc = String(a[searchModel]).trim().toLowerCase() === 'included';
+          const bInc = String(b[searchModel]).trim().toLowerCase() === 'included';
+          if (aInc && !bInc) return -1;
+          if (!aInc && bInc) return 1;
+          
+          return 0;
+        });
+
+        items.forEach((item, index) => {
+          const rawPrice = item[searchModel];
+          if (rawPrice === '' || rawPrice === undefined) return; 
+          
+          const rawStr = String(rawPrice).trim();
+          const rawLower = rawStr.toLowerCase();
+          
+          if (rawLower === '-') return; // Ignored as blank
+
+          let priceValue = 0;
+          let displayPrice = '';
+          let subOptionsHTML = '';
+
+          // The Multi-Functional Price Cell Parser
+          if (rawLower === 'included') {
+            displayPrice = `<span class="badge-green">Included</span>`;
+          } else if (rawLower === 'n/c') {
+            displayPrice = `<span class="badge-red">n/c</span>`;
+          } else if (rawLower === 'please call' || rawLower === 'call for quote') {
+            displayPrice = `<span class="badge-yellow">${rawStr}</span>`;
+          } else if (!isNaN(parseFloat(rawStr)) && isFinite(rawStr) && rawStr !== '') {
+            priceValue = parseFloat(rawStr);
+            displayPrice = priceValue < 0 ? `<span class="price-negative">-$${Math.abs(priceValue).toFixed(2)}</span>` : `+$${priceValue.toFixed(2)}`;
+          } else {
+            // Text/Color options
+            displayPrice = `<span class="badge-green" style="background: rgba(255,255,255,0.1); color: var(--text-muted); border-color: rgba(255,255,255,0.2);">$0.00</span>`;
+            const subOpts = rawStr.split(',').map(s => s.trim()).filter(s => s);
+            
+            if (subOpts.length > 1) {
+              subOptionsHTML = `<div class="sub-options-container" onclick="event.stopPropagation();">`;
+              subOpts.forEach((sub, sIdx) => {
+                const subId = `opt_${category.replace(/[^a-zA-Z0-9]/g, '')}_${index}_sub_${sIdx}`;
+                // Added the 'disabled' attribute to the input
+                subOptionsHTML += `
+                  <input type="radio" id="${subId}" name="sub_group_${category.replace(/[^a-zA-Z0-9]/g, '')}_${index}" class="sub-opt-radio" ${sIdx === 0 ? 'checked' : ''} disabled>
+                  <label for="${subId}" class="sub-opt-label">${sub}</label>
+                `;
+              });
+              subOptionsHTML += `</div>`;
+            } else if (subOpts.length === 1) {
+              subOptionsHTML = `<div style="font-size: 11px; color: var(--gold-primary); margin-top: 4px; padding-left: 2px;">${subOpts[0]}</div>`;
+            }
+          }
+
+          const safeCat = category.replace(/[^a-zA-Z0-9]/g, '');
+          const optId = `opt_${safeCat}_${index}`;
+          const uiNoteText = item['UI Note'] ? `<div style="font-size: 0.75rem; color: var(--gold-primary); margin-top: 4px;"><i class="fa-solid fa-circle-info"></i> ${item['UI Note']}</div>` : '';
+          
+          // --- IMAGE POPOVER LOGIC ---
+          let rawImageUrl = String(item['Image URL'] || '').trim();
+          let displayImageUrl = rawImageUrl;
+          
+          if (rawImageUrl.includes('drive.google.com/file/d/')) {
+            const match = rawImageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+              displayImageUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+            }
+          }
+          
+          const imagePopoverHTML = displayImageUrl ? `
+            <span class="image-popover-trigger" onclick="toggleImagePopover(this, event)">
+              <i class="fa-solid fa-image"></i>
+              <div class="image-popover-content">
+                <img src="${displayImageUrl}" loading="lazy" alt="Option Image">
+              </div>
+            </span>` : '';
+          // ---------------------------
+
+          const maxQty = parseInt(item['Max Qty']) || 1;
+          const isExclusive = String(item['Selection Type'] || '').trim().toLowerCase() === 'exclusive';
+          
+          // Pull Logic IDs from Database
+          const dbOptId = String(item['Option ID'] || '').trim();
+          const reqId = String(item['Requires ID'] || '').trim();
+          const excId = String(item['Excludes ID'] || '').trim();
+          const dataAttrs = `data-opt-id="${dbOptId}" data-requires="${reqId}" data-excludes="${excId}"`;
+          
+          let controlHTML = '';
+
+          // 1. Dynamic Control Generation
+          if (maxQty === 2) {
+            controlHTML = `
+              <div class="side-pills" onclick="event.stopPropagation();">
+                <input type="checkbox" id="${optId}_dr" class="option-checkbox cat-${safeCat} hidden-pill-cb" value="${priceValue}" data-exclusive="${isExclusive}" ${dataAttrs} onchange="handleExclusivity(this, '${safeCat}', ${isExclusive})">
+                <label for="${optId}_dr" class="side-pill">Driver</label>
+                
+                <input type="checkbox" id="${optId}_pa" class="option-checkbox cat-${safeCat} hidden-pill-cb" value="${priceValue}" data-exclusive="${isExclusive}" ${dataAttrs} onchange="handleExclusivity(this, '${safeCat}', ${isExclusive})">
+                <label for="${optId}_pa" class="side-pill">Pass</label>
+              </div>
+            `;
+          } else if (maxQty > 2) {
+            controlHTML = `
+              <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+                <input type="checkbox" id="${optId}" class="option-checkbox cat-${safeCat}" value="${priceValue}" data-qty-id="qty_${optId}" data-exclusive="${isExclusive}" ${dataAttrs} onchange="handleExclusivity(this, '${safeCat}', ${isExclusive})">
+                <input type="number" id="qty_${optId}" class="qty-input" min="1" max="${maxQty}" value="1" onchange="calculateTotal()" disabled>
+              </div>
+            `;
+          } else if (isExclusive) {
+            controlHTML = `
+              <label class="toggle-switch" onclick="event.stopPropagation();">
+                <input type="checkbox" id="${optId}" class="option-checkbox cat-${safeCat}" value="${priceValue}" data-exclusive="true" ${dataAttrs} onchange="handleExclusivity(this, '${safeCat}', true)">
+                <span class="slider round"></span>
+              </label>
+            `;
+          } else {
+            controlHTML = `
+              <input type="checkbox" id="${optId}" class="option-checkbox cat-${safeCat}" value="${priceValue}" data-exclusive="false" ${dataAttrs} onchange="handleExclusivity(this, '${safeCat}', false)" onclick="event.stopPropagation();" style="margin-top:2px;">
+            `;
+          }
+
+          // Added id attribute to the div for teleporting
+          html += `
+            <div id="row_${dbOptId}" class="option-item" style="align-items: flex-start; padding: 12px 16px;">
+              <div class="option-info" style="align-items: flex-start; margin-top: 2px; width: 100%;">
+                ${controlHTML}
+                <div style="display: flex; flex-direction: column; margin-left: 10px; flex-grow: 1;">
+                  <div style="display: flex; align-items: center;">
+                    <label class="option-name" for="${(maxQty === 2) ? '' : optId}" style="line-height: 1.4; cursor:pointer; margin-bottom: 0;">${item['Option Name']}</label>
+                    ${imagePopoverHTML}
+                  </div>
+                  ${subOptionsHTML}
+                  ${uiNoteText}
+                </div>
+              </div>
+              <span class="option-price" style="margin-top: 2px; white-space: nowrap;">${displayPrice}</span>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+      }
+      
+      optionsContainer.innerHTML = html;
+      runLogicEngine(); // Instantly apply lockouts based on Base/Truck rules
+      calculateTotal();
+    }
+
+    // --- THE CPQ LOGIC ENGINE ---
+    function getActiveSystemIDs() {
+      let active = [];
+      // Convert EVERYTHING to uppercase for bulletproof matching
+      if (lastValidState.capModel) active.push(String(lastValidState.capModel).trim().toUpperCase());
+      
+      if (typeof globalTruckData !== 'undefined' && globalTruckData.length > 0) {
+        const trk = globalTruckData.find(t => 
+          String(t['Make']).trim().toUpperCase() === String(lastValidState.make).trim().toUpperCase() && 
+          String(t['Model']).trim().toUpperCase() === String(lastValidState.model).trim().toUpperCase()
+        );
+        if (trk && trk['Truck ID']) active.push(String(trk['Truck ID']).trim().toUpperCase());
+      }
+      
+      const bData = lastValidState.capType === 'Commercial' ? commercialBaseData : fiberglassBaseData;
+      if (bData && bData.length > 0) {
+        const baseRow = bData.find(b => 
+          String(b['Size Category']).trim().toUpperCase() === String(lastValidState.sizeCategory).trim().toUpperCase() && 
+          String(b['Bed Length']).trim().toUpperCase() === String(lastValidState.bedLength).trim().toUpperCase()
+        );
+        if (baseRow && baseRow['Base ID']) active.push(String(baseRow['Base ID']).trim().toUpperCase());
+      }
+      return active;
+    }
+
+    function runLogicEngine() {
+      let changed;
+      let iterations = 0;
+      const allCheckboxes = document.querySelectorAll('.option-checkbox');
+
+      do {
+        changed = false;
+        iterations++;
+        
+        let activeIDs = getActiveSystemIDs();
+        allCheckboxes.forEach(cb => {
+          if (cb.checked && cb.dataset.optId) {
+            activeIDs.push(String(cb.dataset.optId).trim().toUpperCase());
+          }
+        });
+
+        allCheckboxes.forEach(cb => {
+          const rawReq = cb.dataset.requires || '';
+          const rawExc = cb.dataset.excludes || '';
+          const myOptId = cb.dataset.optId ? String(cb.dataset.optId).trim().toUpperCase() : 'UNKNOWN';
+          const optItem = cb.closest('.option-item');
+          
+          const reqStr = String(rawReq).trim().toUpperCase();
+          const excStr = String(rawExc).trim().toUpperCase();
+          
+          let isLocked = false;
+          let lockReason = "";
+
+          if (reqStr) {
+            const andGroups = reqStr.split('+').map(s => s.trim()).filter(s => s);
+            for (const group of andGroups) {
+              const orItems = group.split(',').map(s => s.trim()).filter(s => s);
+              const isMet = orItems.some(item => activeIDs.includes(item));
+              if (!isMet) { 
+                isLocked = true; 
+                lockReason = `Missing prerequisite: Needs [${orItems.join(' OR ')}]`;
+                break; 
+              }
+            }
+          }
+
+          if (!isLocked && excStr) {
+            const excItems = excStr.split(',').map(s => s.trim()).filter(s => s);
+            const conflictItem = excItems.find(item => activeIDs.includes(item) && item !== myOptId);
+            if (conflictItem) {
+              isLocked = true;
+              lockReason = `Blocked by [${conflictItem}]`;
+            }
+          }
+
+          if (isLocked) {
+            if (cb.checked) {
+              cb.checked = false; 
+              changed = true;
+            }
+            cb.disabled = true;
+            optItem.classList.add('locked');
+            
+            // TELEPORT LOGIC - Styled as a distinct action button
+            if (iterations === 1 && reqStr && !optItem.querySelector('.teleport-btn:not(.return-btn)')) {
+              const firstReq = reqStr.split('+')[0].split(',')[0].trim();
+              if (firstReq.startsWith('F-OPT')) {
+                const nameLabel = optItem.querySelector('.option-name');
+                const link = document.createElement('span');
+                link.className = 'teleport-btn';
+                link.innerHTML = `<i class="fa-solid fa-location-arrow"></i> Unlock: ${firstReq}`;
+                link.onclick = (e) => { 
+                  e.preventDefault();
+                  e.stopPropagation(); 
+                  teleportTo(firstReq, myOptId); 
+                };
+                if (nameLabel) nameLabel.after(link);
+              }
+            }
+          } else {
+            cb.disabled = false;
+            optItem.classList.remove('locked');
+            const existingBtn = optItem.querySelector('.teleport-btn:not(.return-btn)');
+            if (existingBtn) existingBtn.remove();
+          }
+        });
+      } while (changed && iterations < 5);
+    }
+
+    // Handles Intra-Field Exclusivity (Single vs Multi) and Visual Dimming
+    function handleExclusivity(checkboxElem, categoryId, isExclusive) {
+      const container = document.getElementById('options-container');
+      const categoryCheckboxes = container.querySelectorAll(`.cat-${categoryId}`);
+
+      // 1. Handle the Logical Unchecking
+      if (checkboxElem.checked) {
+        if (isExclusive) {
+          // If checking an Exclusive option, uncheck ALL others
+          categoryCheckboxes.forEach(cb => {
+            if (cb !== checkboxElem) cb.checked = false;
+          });
+        } else {
+          // If checking a Standard option, uncheck any active Exclusive options
+          categoryCheckboxes.forEach(cb => {
+            if (cb !== checkboxElem && cb.dataset.exclusive === 'true') cb.checked = false;
+          });
+        }
+      }
+
+      // 2. Handle the Visual Deactivation (Dimming & Strikethrough)
+      let exclusiveIsActive = false;
+      let activeExclusiveCb = null;
+      
+      // Check if ANY exclusive option in this category is currently checked
+      categoryCheckboxes.forEach(cb => {
+        if (cb.checked && cb.dataset.exclusive === 'true') {
+          exclusiveIsActive = true;
+          activeExclusiveCb = cb;
+        }
+      });
+
+      // Apply or remove the 'dimmed' class to the parent row
+      categoryCheckboxes.forEach(cb => {
+        const optionItem = cb.closest('.option-item');
+        if (exclusiveIsActive) {
+          if (cb !== activeExclusiveCb) {
+            optionItem.classList.add('dimmed');
+          } else {
+            optionItem.classList.remove('dimmed');
+          }
+        } else {
+          optionItem.classList.remove('dimmed');
+        }
+        
+        // Enable or Disable sub-inputs (numbers and color toggles) based on checkbox state
+        const optionInfo = cb.closest('.option-info');
+        if (optionInfo) {
+          const subInputs = optionInfo.querySelectorAll('.qty-input, .sub-opt-radio');
+          subInputs.forEach(input => {
+            input.disabled = !cb.checked;
+          });
+        }
+      });
+
+      runLogicEngine();
+      calculateTotal();
+    }
+
+let teleportHistory = {}; // Keeps track of where we came from
+
+    function teleportTo(targetId, fromId) {
+      // Cleanup: Remove any existing return buttons elsewhere before starting a new teleport
+      document.querySelectorAll('.return-btn').forEach(btn => btn.remove());
+      teleportHistory = {}; 
+
+      const targetEl = document.getElementById('row_' + targetId);
+      if (targetEl) {
+        teleportHistory[targetId] = fromId;
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetEl.classList.add('target-highlight');
+        setTimeout(() => targetEl.classList.remove('target-highlight'), 3000);
+        
+        // Show the return button on the target row if it doesn't have one
+        renderReturnButton(targetId);
+      }
+    }
+
+    function returnTo(originalId, currentTargetId) {
+      const originalEl = document.getElementById('row_' + originalId);
+      
+      // 1. Scroll back to original context
+      if (originalEl) {
+        originalEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        originalEl.classList.add('target-highlight');
+        setTimeout(() => originalEl.classList.remove('target-highlight'), 3000);
+      }
+
+      // 2. Immediate UI Cleanup
+      const currentTargetRow = document.getElementById('row_' + currentTargetId);
+      if (currentTargetRow) {
+        const btn = currentTargetRow.querySelector('.return-btn');
+        if (btn) btn.remove();
+      }
+
+      // 3. Wipe the memory for this path
+      delete teleportHistory[currentTargetId];
+    }
+
+    function renderReturnButton(targetId) {
+      const targetRow = document.getElementById('row_' + targetId);
+      const fromId = teleportHistory[targetId];
+      if (targetRow && fromId && !targetRow.querySelector('.return-btn')) {
+        const nameContainer = targetRow.querySelector('.option-name').parentElement;
+        const returnBtn = document.createElement('span');
+        returnBtn.className = 'teleport-btn return-btn';
+        returnBtn.innerHTML = `<i class="fa-solid fa-arrow-up"></i> Return to previous`;
+        returnBtn.style.fontSize = '10px';
+        returnBtn.style.marginTop = '5px';
+        returnBtn.onclick = () => returnTo(fromId, targetId);
+        nameContainer.appendChild(returnBtn);
+      }
+    }
+    // The Surcharge Auditor
+    function calculateSurcharges(activeIDsArray) {
+      let extraTotal = 0;
+      let messages = [];
+      // Convert to Set for ultra-fast performance lookup
+      const activeIDsSet = new Set(activeIDsArray); 
+
+      logicRulesData.forEach(rule => {
+        const reqStr = String(rule['Required IDs (AND)'] || '').trim().toUpperCase();
+        if (!reqStr) return;
+
+        // Split by '+' for AND logic
+        const requiredArray = reqStr.split('+').map(s => s.trim());
+        
+        // Check if EVERY ID in the rule is currently active
+        const isTriggered = requiredArray.every(id => activeIDsSet.has(id));
+
+        if (isTriggered) {
+          const amount = parseFloat(rule['Surcharge Amount']) || 0;
+          extraTotal += amount;
+          if (rule['UI Message']) messages.push(rule['UI Message']);
+        }
+      });
+
+      return { amount: extraTotal, messages: messages };
+    }
+
+    function calculateTotal() {
+      let freightCharge = 170; // Fixed freight charge
+      let optionsTotal = 0;
+      const checkboxes = document.querySelectorAll('.option-checkbox:checked');
+      
+      // Gather IDs for the Surcharge Auditor
+      let activeIDs = getActiveSystemIDs();
+      
+      checkboxes.forEach(cb => {
+        if (cb.dataset.optId) {
+          activeIDs.push(String(cb.dataset.optId).trim().toUpperCase());
+        }
+
+        let price = parseFloat(cb.value) || 0;
+        let qtyId = cb.getAttribute('data-qty-id');
+        let qty = 1;
+        
+        // Multiply by quantity if a counter exists
+        if (qtyId) {
+          const qtyEl = document.getElementById(qtyId);
+          if (qtyEl) qty = parseInt(qtyEl.value) || 1;
+        }
+        
+        optionsTotal += (price * qty);
+      });
+
+      // Process Surcharges & Extra Fees
+      const surcharges = calculateSurcharges(activeIDs);
+      optionsTotal += surcharges.amount;
+      
+      let total = currentBasePrice + freightCharge + optionsTotal;
+      
+      document.getElementById('total-price-display').innerText = '$' + total.toFixed(2);
+
+      // Display UI Messages for Surcharges
+      const msgContainer = document.getElementById('surcharge-messages');
+      if (msgContainer) {
+        if (surcharges.messages.length > 0) {
+          msgContainer.innerHTML = surcharges.messages.map(m => 
+            `<div style="font-size:11px; color:var(--gold-primary); margin-top: 4px;">
+              <i class="fa-solid fa-circle-plus"></i> ${m}
+            </div>`
+          ).join('');
+        } else {
+          msgContainer.innerHTML = '';
+        }
+      }
+    }
+  </script>
+</body>
+</html>
