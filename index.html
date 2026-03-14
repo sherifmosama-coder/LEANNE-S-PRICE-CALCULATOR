@@ -372,6 +372,30 @@
       .image-popover-content::after { left: 75%; }
       .image-popover-content img { max-width: 180px; max-height: 180px; }
     }
+
+    /* =========================================
+       🖨️ PDF / PRINT OPTIMIZATION
+       ========================================= */
+    @media print {
+      /* Clean the slate */
+      body { background: white !important; margin: 0; padding: 0; }
+      
+      /* Hide the entire web app interface */
+      body > *:not(#print-layout) { display: none !important; }
+      
+      /* Show ONLY the Print Layout */
+      #print-layout { display: block !important; width: 100%; color: black; font-family: 'Poppins', sans-serif; }
+      
+      /* Print Page Settings */
+      @page { margin: 12mm; }
+      
+      /* Prevent grid rows and table rows from being cut in half across pages */
+      tr { page-break-inside: avoid; }
+      .print-no-break { page-break-inside: avoid; }
+      
+      /* Force Chrome/Edge to print our custom background colors */
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
   </style>
 </head>
 <body>
@@ -608,7 +632,7 @@
 
     </div>
   </div>
-
+  <div id="print-layout" style="display: none;"></div>
   <script>
     let globalTruckData = [];
     let fiberglassBaseData = [];
@@ -739,7 +763,9 @@
       document.getElementById('display-client-name').innerText = name;
       closeIntakeModal();
       
+      isProgrammaticUpdate = true; // Lock modals
       requestFullReset(); // Ensure the configurator is completely blank
+      isProgrammaticUpdate = false; // Release lock
       
       // Swap Views
       document.getElementById('dashboard-view').style.display = 'none';
@@ -756,8 +782,9 @@
 
     // --- PHASE 4: LOAD ENGINE (ASYNCHRONOUS REBUILD) ---
     function loadQuote(id) {
+      isProgrammaticUpdate = true; // Engage Safety Lock
       const q = globalQuotesList.find(x => x.quoteId === id);
-      if (!q) return;
+      if (!q) { isProgrammaticUpdate = false; return; }
 
       currentQuoteData = {
         clientName: q.clientName, clientPhone: q.clientPhone || '', clientEmail: q.clientEmail || '',
@@ -785,8 +812,8 @@
           google.script.run.withSuccessHandler(commData => {
             commercialBaseData = commData;
             continueLoadSequence(q); // Trigger Phase 2 once data is ready
-          }).getCommercialBaseTable();
-        }).getFiberglassBaseTable();
+          }).withFailureHandler(e => { console.error(e); isProgrammaticUpdate = false; }).getCommercialBaseTable();
+        }).withFailureHandler(e => { console.error(e); isProgrammaticUpdate = false; }).getFiberglassBaseTable();
       } else {
         continueLoadSequence(q);
       }
@@ -840,12 +867,12 @@
         google.script.run.withSuccessHandler(optionsData => {
           renderOptions(optionsData);
           applyLoadedStateJSON(q.configStateJSON);
-        }).getFiberglassOptions(sizeCategory, searchModel);
+        }).withFailureHandler(e => { console.error(e); isProgrammaticUpdate = false; }).getFiberglassOptions(sizeCategory, searchModel);
       } else {
         google.script.run.withSuccessHandler(optionsData => {
           renderOptions(optionsData);
           applyLoadedStateJSON(q.configStateJSON);
-        }).getCommercialOptions(sizeCategory, searchModel);
+        }).withFailureHandler(e => { console.error(e); isProgrammaticUpdate = false; }).getCommercialOptions(sizeCategory, searchModel);
       }
     }
 
@@ -874,6 +901,8 @@
       
       const printBtn = document.getElementById('print-quote-btn');
       if (printBtn) { printBtn.disabled = true; printBtn.style.opacity = '0.5'; printBtn.style.cursor = 'not-allowed'; }
+      
+      isProgrammaticUpdate = false; // Release the lock so the user can interact!
     }
 
     // Capture global quotes when fetching
@@ -969,8 +998,164 @@
       }).saveNewUserDB(name, pass);
     }
 
-    // Stub for PDF
-    function printQuote() { alert("PDF Generation is coming in Step 5!"); }
+    // --- PHASE 5: PDF & PRINT ENGINE ---
+    function printQuote() {
+      // 1. Gather Options & Quantities
+      let optionsHtml = '';
+      let optionsTotal = 0;
+      
+      document.querySelectorAll('.option-checkbox:checked').forEach(cb => {
+        let parentDiv = cb.closest('.option-item');
+        let name = parentDiv ? parentDiv.querySelector('.option-name').innerText : cb.id;
+        let price = parseFloat(cb.value) || 0;
+        
+        let qtyText = '1';
+        let qtyMultiplier = 1;
+        let qtyId = cb.getAttribute('data-qty-id');
+        
+        // Smart Quantity Detection (Reads exact text from dropdowns like "Driver Side Only")
+        if (qtyId) {
+          let qEl = document.getElementById(qtyId);
+          if (qEl) {
+            if (qEl.tagName === 'SELECT') {
+               qtyText = qEl.options[qEl.selectedIndex].text;
+               qtyMultiplier = parseInt(qEl.value) || 1;
+            } else {
+               qtyMultiplier = parseInt(qEl.value) || 1;
+               qtyText = qtyMultiplier.toString();
+            }
+          }
+        }
+        
+        // Check for Image
+        let imgUrl = cb.getAttribute('data-img');
+        let imgTag = imgUrl && imgUrl !== 'null' ? 
+          `<img src="${imgUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">` : 
+          `<div style="width: 45px; height: 45px; background: #f8fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cbd5e1;"><i class="fa-solid fa-image"></i></div>`;
+        
+        let extPrice = price * qtyMultiplier;
+        optionsTotal += extPrice;
+        
+        optionsHtml += `
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 5px;">${imgTag}</td>
+            <td style="padding: 10px; font-weight: 500; color: #1e293b; font-size: 13px;">${name}</td>
+            <td style="padding: 10px; text-align: center; color: #64748b; font-size: 13px;">${qtyText}</td>
+            <td style="padding: 10px; text-align: right; color: #64748b; font-size: 13px;">$${price.toFixed(2)}</td>
+            <td style="padding: 10px; text-align: right; font-weight: 600; color: #1e293b; font-size: 13px;">$${extPrice.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // 2. Process Surcharges
+      let activeIDs = [];
+      document.querySelectorAll('.option-checkbox:checked').forEach(cb => {
+        if (cb.dataset.optId) activeIDs.push(String(cb.dataset.optId).trim().toUpperCase());
+      });
+      const surcharges = calculateSurcharges(activeIDs);
+      let surchargesHtml = '';
+      if (surcharges.messages.length > 0) {
+         surcharges.messages.forEach(m => {
+           surchargesHtml += `<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; color: #e74c3c; font-size: 13px;"><span><i class="fa-solid fa-triangle-exclamation"></i> ${m}</span></div>`;
+         });
+      }
+
+      // 3. Gather Base Specs & Display Financials
+      let make = document.getElementById('makeSelect').value;
+      let model = document.getElementById('modelSelect').value;
+      let size = document.getElementById('sizeChip').innerText.trim();
+      let capType = document.querySelector('input[name="capType"]:checked').value;
+      let bedLength = document.getElementById('bedLengthSelect').value;
+      let capModel = document.getElementById('capModelSelect').value;
+      
+      let basePrice = document.getElementById('base-price-display').innerText; 
+      let freight = document.getElementById('freight-price-display').innerText; 
+      let grandTotal = document.getElementById('total-price-display').innerText;
+
+      let dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      // 4. Inject the Document Template
+      const layout = document.getElementById('print-layout');
+      layout.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto; padding-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1b4c96; padding-bottom: 15px; margin-bottom: 30px;">
+            <img src="https://drive.google.com/thumbnail?id=1RNVjlJ816sBAKLmcpKlHcO3F0QF9lT9X&sz=w800" style="max-width: 220px;">
+            <div style="text-align: right;">
+              <h1 style="margin: 0; color: #1b4c96; font-size: 26px; letter-spacing: 1px;">OFFICIAL QUOTE</h1>
+              <p style="margin: 5px 0 0 0; color: #64748b; font-size: 13px;"><strong>Quote ID:</strong> ${currentQuoteData.quoteId || 'Unsaved'}</p>
+              <p style="margin: 2px 0 0 0; color: #64748b; font-size: 13px;"><strong>Date:</strong> ${dateStr}</p>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 30px;" class="print-no-break">
+            <div style="flex: 1;">
+              <h4 style="margin: 0 0 8px 0; color: #1b4c96; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Prepared For:</h4>
+              <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">${currentQuoteData.clientName || 'N/A'}</p>
+              ${currentQuoteData.clientPhone ? `<p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;"><i class="fa-solid fa-phone" style="width: 15px;"></i> ${currentQuoteData.clientPhone}</p>` : ''}
+              ${currentQuoteData.clientEmail ? `<p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;"><i class="fa-solid fa-envelope" style="width: 15px;"></i> ${currentQuoteData.clientEmail}</p>` : ''}
+            </div>
+            <div style="flex: 1; text-align: right;">
+              <h4 style="margin: 0 0 8px 0; color: #1b4c96; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Prepared By:</h4>
+              <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">${currentUser ? currentUser.name : 'Staff'}</p>
+              <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">Sterling Fleet Outfitters</p>
+            </div>
+          </div>
+
+          <div class="print-no-break" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+            <h4 style="margin: 0 0 15px 0; color: #1b4c96; font-size: 15px;"><i class="fa-solid fa-truck"></i> Vehicle Specifications</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+              <div><span style="display:block; font-size: 11px; color: #64748b; text-transform: uppercase;">Vehicle</span><strong style="color: #0f172a; font-size: 13px;">${make} ${model}</strong></div>
+              <div><span style="display:block; font-size: 11px; color: #64748b; text-transform: uppercase;">Bed Length</span><strong style="color: #0f172a; font-size: 13px;">${bedLength}</strong></div>
+              <div><span style="display:block; font-size: 11px; color: #64748b; text-transform: uppercase;">Size Category</span><strong style="color: #0f172a; font-size: 13px;">${size}</strong></div>
+              <div><span style="display:block; font-size: 11px; color: #64748b; text-transform: uppercase;">Cap Type</span><strong style="color: #0f172a; font-size: 13px;">${capType}</strong></div>
+              <div style="grid-column: span 2;"><span style="display:block; font-size: 11px; color: #64748b; text-transform: uppercase;">Cap Model</span><strong style="color: #0f172a; font-size: 13px;">${capModel}</strong></div>
+            </div>
+          </div>
+
+          <h4 style="margin: 0 0 10px 0; color: #1b4c96; font-size: 15px;"><i class="fa-solid fa-list-check"></i> Configuration & Options</h4>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+              <tr style="background: #1b4c96; color: white; text-align: left;">
+                <th style="padding: 10px 5px; border-radius: 6px 0 0 6px; width: 55px; font-weight: 500; font-size: 13px;">Img</th>
+                <th style="padding: 10px; font-weight: 500; font-size: 13px;">Description</th>
+                <th style="padding: 10px; text-align: center; font-weight: 500; font-size: 13px;">Qty/Type</th>
+                <th style="padding: 10px; text-align: right; font-weight: 500; font-size: 13px;">Unit Price</th>
+                <th style="padding: 10px; border-radius: 0 6px 6px 0; text-align: right; font-weight: 500; font-size: 13px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${optionsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #64748b; font-style: italic;">No additional options selected.</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="print-no-break" style="display: flex; justify-content: flex-end;">
+            <div style="width: 350px;">
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13px;">
+                <span>Base Price:</span> <strong>${basePrice}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13px;">
+                <span>Freight Setup:</span> <strong>${freight}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13px;">
+                <span>Options Total:</span> <strong>$${optionsTotal.toFixed(2)}</strong>
+              </div>
+              ${surchargesHtml}
+              <div style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 3px double #1b4c96; color: #1b4c96; font-size: 20px; font-weight: 700; margin-top: 10px;">
+                <span>Estimated Total:</span> <span>${grandTotal}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="print-no-break" style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+            <p style="margin: 0 0 5px 0;">This quote is valid for 30 days. Prices, specifications, and availability are subject to change.</p>
+            <p style="margin: 0;"><strong>Sterling Fleet Outfitters</strong> | REALTRUCK Authorized Dealer</p>
+          </div>
+        </div>
+      `;
+      
+      // 5. Trigger Browser Print
+      setTimeout(() => { window.print(); }, 200);
+    }
 
     // --- THEME TOGGLE LOGIC ---
     function toggleTheme() {
@@ -1036,6 +1221,7 @@
     // --- RESET AND STATE MANAGEMENT ---
     let lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
     let currentBasePrice = 0;
+    let isProgrammaticUpdate = false; // Safety lock to prevent modals during loading
 
     function saveValidState() {
       lastValidState.make = document.getElementById('makeSelect').value;
@@ -1049,8 +1235,14 @@
     }
 
     function confirmReset(fieldId, revertValue, proceedCallback) {
+      if (isProgrammaticUpdate) {
+        proceedCallback();
+        saveValidState();
+        return;
+      }
+
       const optionsContainer = document.getElementById('options-container');
-      const hasOptions = optionsContainer.innerHTML.trim() !== '' && !optionsContainer.innerHTML.includes('Loading');
+      const hasOptions = optionsContainer.innerHTML.trim() !== '' && !optionsContainer.innerHTML.includes('Loading') && !optionsContainer.innerHTML.includes('Rebuilding');
       
       if (hasOptions) {
         const modal = document.getElementById('reset-modal');
