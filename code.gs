@@ -402,3 +402,101 @@ function saveOrUpdateClientDB(name, phone, email) {
     return { success: true, message: 'Added' };
   } catch (e) { return { success: false, error: e.toString() }; }
 }
+
+// ==========================================
+// 📝 PHASE 8: TERMS & CONDITIONS ENGINE
+// ==========================================
+
+function getTCData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let pool = [], templates = [];
+    
+    const pSheet = ss.getSheetByName('tbl_TC_Pool');
+    if (pSheet) {
+      const pData = pSheet.getDataRange().getValues();
+      for (let i = 1; i < pData.length; i++) if (pData[i][0]) pool.push({ id: pData[i][0], text: String(pData[i][1]).trim() });
+    }
+    
+    const tSheet = ss.getSheetByName('tbl_TC_Templates');
+    if (tSheet) {
+      const tData = tSheet.getDataRange().getValues();
+      for (let i = 1; i < tData.length; i++) {
+        if (tData[i][0]) templates.push({ 
+          id: tData[i][0], 
+          name: tData[i][1], 
+          statements: String(tData[i][2]), 
+          isDefault: String(tData[i][3]).toLowerCase() === 'true' 
+        });
+      }
+    }
+    return { pool: pool, templates: templates };
+  } catch (e) { return { pool: [], templates: [] }; }
+}
+
+function saveSmartTC(newStatements, newTemplates) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (newStatements && newStatements.length > 0) {
+      const pSheet = ss.getSheetByName('tbl_TC_Pool');
+      newStatements.forEach(text => {
+        pSheet.appendRow(['S-' + Math.floor(10000 + Math.random() * 90000), text]);
+      });
+    }
+    if (newTemplates && newTemplates.length > 0) {
+      const tSheet = ss.getSheetByName('tbl_TC_Templates');
+      newTemplates.forEach(tpl => {
+        tSheet.appendRow(['T-' + Math.floor(10000 + Math.random() * 90000), tpl.name, tpl.statements, false]);
+      });
+    }
+    return { success: true };
+  } catch (e) { return { success: false }; }
+}
+
+function adminUpdateTCTemplate(id, name, statements, isDefault) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_TC_Templates');
+    const data = sheet.getDataRange().getValues();
+    
+    if (isDefault) {
+      for (let i = 1; i < data.length; i++) sheet.getRange(i + 1, 4).setValue(false); // Clear old defaults
+    }
+    
+    if (id) {
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][0] === id) {
+          sheet.getRange(i + 1, 2).setValue(name);
+          sheet.getRange(i + 1, 3).setValue(statements);
+          sheet.getRange(i + 1, 4).setValue(isDefault);
+          return { success: true };
+        }
+      }
+    } else {
+      sheet.appendRow(['T-' + Math.floor(10000 + Math.random() * 90000), name, statements, isDefault]);
+      return { success: true };
+    }
+    return { success: false };
+  } catch (e) { return { success: false }; }
+}
+
+function adminDeleteTCTemplate(id) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_TC_Templates');
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) { sheet.deleteRow(i + 1); return { success: true }; }
+    }
+    return { success: false };
+  } catch (e) { return { success: false }; }
+}
+
+function adminDeleteTCStatementDB(id) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_TC_Pool');
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) { sheet.deleteRow(i + 1); return { success: true }; }
+    }
+    return { success: false };
+  } catch (e) { return { success: false }; }
+}
