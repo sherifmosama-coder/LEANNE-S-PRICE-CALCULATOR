@@ -216,9 +216,9 @@ function saveQuoteToDB(quoteData, configJSON) {
       newQuoteId, revisionOf, new Date().toISOString(), quoteData.createdBy || 'Unknown',
       quoteData.clientName, quoteData.clientPhone, quoteData.clientEmail,
       quoteData.make, quoteData.model, quoteData.sizeCategory, quoteData.capType,
-      quoteData.bedLength, quoteData.capModel, quoteData.totalPrice, configJSON
+      quoteData.bedLength, quoteData.capModel, quoteData.totalPrice, configJSON,
+      quoteData.tcText || '' // <--- Added TC Text to save alongside the quote!
     ]);
-    
     return { success: true, newQuoteId: newQuoteId };
   } catch (e) {
     return { success: false, message: e.toString() };
