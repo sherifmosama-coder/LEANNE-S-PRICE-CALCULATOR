@@ -29,44 +29,38 @@ function verifyLogin(username, passcode) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const userSheet = ss.getSheetByName('tbl_Users');
-    
-    if (!userSheet) {
-      return { success: false, message: "Database error: tbl_Users not found in Google Sheets." };
-    }
+    if (!userSheet) return { success: false, message: "Database error: tbl_Users not found." };
     
     const data = userSheet.getDataRange().getValues();
     const headers = data[0];
     
-    // Find column indexes to ensure it works even if you rearrange columns later
     const idCol = headers.indexOf('User ID');
     const userCol = headers.indexOf('Username');
+    const fullNameCol = headers.indexOf('Full Name'); // New Field
     const passCol = headers.indexOf('Passcode');
     const roleCol = headers.indexOf('Role');
     const statusCol = headers.indexOf('Status');
     
-    // Loop through users (skipping row 1 headers)
     for (let i = 1; i < data.length; i++) {
       let row = data[i];
       let dbUser = String(row[userCol]).trim();
       let dbPass = String(row[passCol]).trim();
       let dbStatus = String(row[statusCol]).trim();
+      let dbFullName = fullNameCol > -1 && row[fullNameCol] ? String(row[fullNameCol]).trim() : dbUser;
       
       if (dbUser.toLowerCase() === String(username).trim().toLowerCase() && dbPass === String(passcode).trim()) {
-        if (dbStatus.toLowerCase() !== 'active') {
-          return { success: false, message: "Account is disabled. Please contact the Admin." };
-        }
+        if (dbStatus.toLowerCase() === 'deleted') continue; // Hide deleted
+        if (dbStatus.toLowerCase() !== 'active') return { success: false, message: "Account is disabled." };
         
         return {
           success: true,
           role: row[roleCol] || 'User',
           userId: row[idCol],
-          name: dbUser
+          name: dbFullName // Now maps to the Full Name field!
         };
       }
     }
-    
     return { success: false, message: "Invalid Username or Passcode." };
-    
   } catch (error) {
     return { success: false, message: "Error connecting to database: " + error.toString() };
   }
@@ -239,19 +233,172 @@ function getAdminUsersDB() {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
     const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const idCol = headers.indexOf('User ID');
+    const userCol = headers.indexOf('Username');
+    const fnCol = headers.indexOf('Full Name');
+    const passCol = headers.indexOf('Passcode');
+    const roleCol = headers.indexOf('Role');
+    const statusCol = headers.indexOf('Status');
+    
     const users = [];
     for (let i = 1; i < data.length; i++) {
-       users.push({ id: data[i][0], username: data[i][1], passcode: data[i][2], role: data[i][3], status: data[i][4] });
+       let status = String(data[i][statusCol]).trim();
+       if (status !== 'Deleted') { // Filter out deleted users
+         users.push({ 
+           id: data[i][idCol], 
+           username: data[i][userCol], 
+           fullName: fnCol > -1 ? data[i][fnCol] : data[i][userCol],
+           passcode: String(data[i][passCol]), // Enforce string
+           role: data[i][roleCol], 
+           status: status 
+         });
+       }
     }
     return users;
   } catch (e) { return []; }
 }
 
-function saveNewUserDB(username, passcode) {
+function saveNewUserDB(username, fullName, passcode) {
   try {
+    const checkUser = String(username).trim().toLowerCase();
+    
+    // 1. Check if the username conflicts with the Hardcoded Admin
+    if (checkUser === ADMIN_USER.toLowerCase()) {
+      return { success: false, message: "Username already exists." };
+    }
+    
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
-    const newId = 'U-' + Math.floor(1000 + Math.random() * 9000); // Random 4 digit ID
-    sheet.appendRow([newId, username, passcode, 'User', 'Active']);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const userCol = headers.indexOf('Username');
+    
+    // 2. Check if the username already exists in tbl_Users
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][userCol]).trim().toLowerCase() === checkUser) {
+        return { success: false, message: "Username already exists." };
+      }
+    }
+
+    // 3. If unique, proceed with saving
+    const newId = 'U-' + Math.floor(1000 + Math.random() * 9000);
+    // Notice the "'" + passcode -> Forces Google Sheets to save '0000' exactly as text
+    sheet.appendRow([newId, username, fullName, "'" + passcode, 'User', 'Active']);
     return { success: true };
   } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function updateUserPasscodeDB(userId, newPasscode) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idCol = headers.indexOf('User ID');
+    const passCol = headers.indexOf('Passcode');
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === userId) {
+        // +1 because sheet rows are 1-indexed and header is row 1
+        sheet.getRange(i + 1, passCol + 1).setValue("'" + newPasscode);
+        return { success: true };
+      }
+    }
+    return { success: false, message: "User not found." };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function deleteUserDB(userId) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idCol = headers.indexOf('User ID');
+    const statusCol = headers.indexOf('Status');
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === userId) {
+        sheet.getRange(i + 1, statusCol + 1).setValue('Deleted');
+        return { success: true };
+      }
+    }
+    return { success: false, message: "User not found." };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+// ==========================================
+// 🏢 PHASE 7: CLIENTS & LOGIN DATA
+// ==========================================
+
+function getActiveUsersList() {
+  try {
+    let users = [];
+    
+    // 1. Always include the Hardcoded Admin first
+    users.push({
+      username: ADMIN_USER,
+      fullName: 'System Admin'
+    });
+
+    // 2. Fetch the rest from tbl_Users
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
+    if (!sheet) return users;
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const userCol = headers.indexOf('Username');
+    const fnCol = headers.indexOf('Full Name');
+    const statusCol = headers.indexOf('Status');
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][statusCol]).trim() === 'Active') {
+        users.push({
+          username: data[i][userCol],
+          fullName: fnCol > -1 && data[i][fnCol] ? data[i][fnCol] : data[i][userCol]
+        });
+      }
+    }
+    return users;
+  } catch (e) { return []; }
+}
+
+function getClientsDB() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Clients');
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    let clients = [];
+    for (let i = 1; i < data.length; i++) {
+      clients.push({
+        name: String(data[i][1]).trim(),
+        phone: String(data[i][2]).trim(),
+        email: String(data[i][3]).trim()
+      });
+    }
+    return clients;
+  } catch (e) { return []; }
+}
+
+function saveOrUpdateClientDB(name, phone, email) {
+  try {
+    if (!name) return;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Clients');
+    if (!sheet) return;
+    const data = sheet.getDataRange().getValues();
+    
+    // Check if client exists
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]).trim().toLowerCase() === String(name).trim().toLowerCase()) {
+        // Update phone/email if they provided new ones
+        if (phone) sheet.getRange(i + 1, 3).setValue(phone);
+        if (email) sheet.getRange(i + 1, 4).setValue(email);
+        return { success: true, message: 'Updated' };
+      }
+    }
+    
+    // If not found, create new client
+    const newId = 'C-' + Math.floor(10000 + Math.random() * 90000);
+    sheet.appendRow([newId, name, phone, email]);
+    return { success: true, message: 'Added' };
+  } catch (e) { return { success: false, error: e.toString() }; }
 }
