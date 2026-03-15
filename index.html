@@ -209,9 +209,9 @@
     .qty-input:focus { border-color: var(--gold-primary); background: var(--input-focus); }
     .qty-input:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .badge-green { background: rgba(46, 204, 113, 0.15); color: #27ae60; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(46, 204, 113, 0.3); font-weight: 600;}
-    .badge-red { background: rgba(231, 76, 60, 0.15); color: #c0392b; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(231, 76, 60, 0.3); font-weight: 600;}
-    .badge-yellow { background: rgba(243, 156, 18, 0.15); color: #d35400; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(243, 156, 18, 0.3); font-weight: 600;}
+    .badge-green { background: rgba(46, 204, 113, 0.15); color: #27ae60; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(46, 204, 113, 0.3); font-weight: 600; white-space: nowrap; display: inline-block;}
+    .badge-red { background: rgba(231, 76, 60, 0.15); color: #c0392b; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(231, 76, 60, 0.3); font-weight: 600; white-space: nowrap; display: inline-block;}
+    .badge-yellow { background: rgba(243, 156, 18, 0.15); color: #d35400; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(243, 156, 18, 0.3); font-weight: 600; white-space: nowrap; display: inline-block;}
     .price-negative { color: #e74c3c; }
     
     .sub-options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -488,7 +488,6 @@
           <span style="font-size: 11px; color: var(--gold-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Client</span><br>
           <span id="display-client-name" style="font-size: 15px; color: var(--text-main); font-weight: 600;"></span>
         </div>
-        <button onclick="backToDashboard()" class="theme-btn" style="border: none; background: transparent; font-size: 12px; padding: 4px; box-shadow: none;"><i class="fa-solid fa-arrow-left"></i> Dashboard</button>
       </div>
 
     <div id="loading" class="loader-container">
@@ -566,9 +565,10 @@
           <div class="quote-total" id="total-price-display">$0.00</div>
         </div>
         
-        <div style="display: flex; gap: 10px; width: 100%;">
-          <button id="save-quote-btn" onclick="saveQuote()" class="btn-confirm" style="flex: 2; padding: 12px; font-size: 14px;"><i class="fa-solid fa-floppy-disk"></i> Save Quote</button>
-          <button id="print-quote-btn" onclick="printQuote()" class="btn-cancel" style="flex: 1; padding: 12px; font-size: 14px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+          <button onclick="backToDashboard()" class="theme-btn" style="flex: 1; padding: 12px; font-size: 14px; min-width: 100px;"><i class="fa-solid fa-arrow-left"></i> Dashboard</button>
+          <button id="save-quote-btn" onclick="saveQuote()" class="btn-confirm" style="flex: 2; padding: 12px; font-size: 14px; min-width: 120px;"><i class="fa-solid fa-floppy-disk"></i> Save Quote</button>
+          <button id="print-quote-btn" onclick="printQuote()" class="btn-cancel" style="flex: 1; padding: 12px; font-size: 14px; opacity: 0.5; cursor: not-allowed; min-width: 80px;" disabled><i class="fa-solid fa-file-pdf"></i> PDF</button>
         </div>
       </div>
     </div>
@@ -765,6 +765,7 @@
       
       isProgrammaticUpdate = true; // Lock modals
       requestFullReset(); // Ensure the configurator is completely blank
+      setQuoteButtonsState(true); // Brand new quote needs saving!
       isProgrammaticUpdate = false; // Release lock
       
       // Swap Views
@@ -773,8 +774,24 @@
     }
 
     function backToDashboard() {
+      // 1. Swap Views back to Dashboard
       document.getElementById('configurator-view').style.display = 'none';
       document.getElementById('dashboard-view').style.display = 'block';
+      
+      // 2. Clear Memory & UI for the next quote
+      isProgrammaticUpdate = true; // Lock triggers to prevent the reset popup modal from appearing
+      requestFullReset(); // Automatically wipes the UI dropdowns, checkboxes, and prices
+      
+      // 3. Wipe state tracking variables completely
+      currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
+      lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
+      currentBasePrice = 0;
+      
+      document.getElementById('display-client-name').innerHTML = ''; // Clear client display
+      
+      isProgrammaticUpdate = false; // Release safety lock
+      
+      // 4. Refresh the dashboard history list
       fetchDashboardQuotes();
     }
     
@@ -899,9 +916,7 @@
         calculateTotal();
       } catch(e) { console.error('Error parsing config state', e); }
       
-      const printBtn = document.getElementById('print-quote-btn');
-      if (printBtn) { printBtn.disabled = true; printBtn.style.opacity = '0.5'; printBtn.style.cursor = 'not-allowed'; }
-      
+      setQuoteButtonsState(false); // Fully loaded & safe to print!
       isProgrammaticUpdate = false; // Release the lock so the user can interact!
     }
 
@@ -950,9 +965,7 @@
             currentQuoteData.revisionOf = res.newQuoteId; 
             document.getElementById('display-client-name').innerHTML = `${currentQuoteData.clientName} <span style="font-size:10px; color:var(--text-muted);">(Saved: ${res.newQuoteId})</span>`;
             
-            // Unlock Print Button
-            const printBtn = document.getElementById('print-quote-btn');
-            printBtn.disabled = false; printBtn.style.opacity = '1'; printBtn.style.cursor = 'pointer';
+            setQuoteButtonsState(false); // Saved & safe to print!
           } else { alert("Error saving: " + res.message); }
         })
         .saveQuoteToDB(dbPayload, JSON.stringify(configState));
@@ -999,49 +1012,151 @@
     }
 
     // --- PHASE 5: PDF & PRINT ENGINE ---
+    // --- PHASE 5: PDF & PRINT ENGINE ---
     function printQuote() {
       // 1. Gather Options & Quantities
       let optionsHtml = '';
       let optionsTotal = 0;
+      let currentCategory = ''; // Tracks the category for grouping headers
       
       document.querySelectorAll('.option-checkbox:checked').forEach(cb => {
         let parentDiv = cb.closest('.option-item');
-        let name = parentDiv ? parentDiv.querySelector('.option-name').innerText : cb.id;
-        let price = parseFloat(cb.value) || 0;
         
+        // Clean Name
+        let name = parentDiv ? parentDiv.querySelector('.option-name').innerText : cb.id;
+        
+        // --- SMART TEXT & PRICE DETECTION ("Included", "n/c") ---
+        let rawValue = cb.value;
+        let priceDisplay = parentDiv ? parentDiv.querySelector('.option-price') : null;
+        
+        // Prioritize the actual visual text if it contains letters (e.g., "Included")
+        if (priceDisplay && /[a-zA-Z]/.test(priceDisplay.innerText)) {
+           rawValue = priceDisplay.innerText.trim().replace(/^\+/, ''); 
+        }
+        
+        let price = parseFloat(rawValue) || 0;
+        let isTextPrice = /[a-zA-Z]/.test(rawValue) && !rawValue.toLowerCase().includes('null');
+        
+        let unitPriceHtml = `$${price.toFixed(2)}`;
+        if (isTextPrice) {
+           let cleanText = rawValue.replace(/^\+/, '').trim();
+           let txtLower = cleanText.toLowerCase();
+           
+           // Default to Blue Theme Chip
+           let chipStyle = "border: 1px solid #1b4c96; color: #1b4c96; background: rgba(27, 76, 150, 0.05);"; 
+           
+           // Apply Color Coding based on UI Rules
+           if (txtLower === 'included') {
+               chipStyle = "border: 1px solid rgba(46, 204, 113, 0.3); color: #27ae60; background: rgba(46, 204, 113, 0.15);"; // Green
+           } else if (txtLower === 'n/c') {
+               chipStyle = "border: 1px solid rgba(231, 76, 60, 0.3); color: #c0392b; background: rgba(231, 76, 60, 0.15);"; // Red
+           } else if (txtLower === 'please call' || txtLower === 'call for quote') {
+               chipStyle = "border: 1px solid rgba(243, 156, 18, 0.3); color: #d35400; background: rgba(243, 156, 18, 0.15);"; // Orange
+           }
+           
+           // Added white-space: nowrap and display: inline-block to prevent text wrapping
+           unitPriceHtml = `<span style="${chipStyle} padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; white-space: nowrap; display: inline-block;">${cleanText}</span>`;
+        }
+        
+        // --- ADD CATEGORY HEADER IF IT CHANGES ---
+        let categoryDiv = cb.closest('.option-category');
+        let categoryName = categoryDiv ? categoryDiv.querySelector('h4').innerText : 'Other Options';
+        
+        if (categoryName !== currentCategory) {
+          optionsHtml += `
+            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-top: 2px solid #cbd5e1;">
+              <td colspan="5" style="padding: 10px 10px; font-weight: 700; color: #1b4c96; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                ${categoryName}
+              </td>
+            </tr>
+          `;
+          currentCategory = categoryName;
+        }
+        
+        // --- SMART QUANTITY & TYPE DETECTION ---
         let qtyText = '1';
         let qtyMultiplier = 1;
         let qtyId = cb.getAttribute('data-qty-id');
         
-        // Smart Quantity Detection (Reads exact text from dropdowns like "Driver Side Only")
         if (qtyId) {
           let qEl = document.getElementById(qtyId);
           if (qEl) {
-            if (qEl.tagName === 'SELECT') {
-               qtyText = qEl.options[qEl.selectedIndex].text;
-               qtyMultiplier = parseInt(qEl.value) || 1;
-            } else {
-               qtyMultiplier = parseInt(qEl.value) || 1;
-               qtyText = qtyMultiplier.toString();
-            }
+             qtyMultiplier = parseInt(qEl.value) || 1;
+             if (qtyMultiplier === 2) {
+                qtyText = '2'; // Max quantity selected
+             } else {
+                qtyText = '1';
+                // Only 1 is selected, determine which side it is
+                if (parentDiv) {
+                   let selectedRadio = parentDiv.querySelector('input[type="radio"]:checked');
+                   if (selectedRadio) {
+                      let radioLabel = parentDiv.querySelector('label[for="' + selectedRadio.id + '"]');
+                      if (radioLabel) {
+                         let txt = radioLabel.innerText.toLowerCase();
+                         if (txt.includes('driver')) qtyText = 'Driver';
+                         else if (txt.includes('pass')) qtyText = 'Pass';
+                         else qtyText = radioLabel.innerText.trim();
+                      }
+                   } else {
+                      // Fallback: look for active side pills without radios
+                      let activePill = parentDiv.querySelector('.side-pill.active, .side-btn.active');
+                      if (activePill) {
+                         let txt = activePill.innerText.toLowerCase();
+                         if (txt.includes('driver')) qtyText = 'Driver';
+                         else if (txt.includes('pass')) qtyText = 'Pass';
+                         else qtyText = activePill.innerText.trim();
+                      }
+                   }
+                }
+             }
+          }
+        } else {
+          // Detect simple pills directly tied to the checkbox
+          let sideLabel = document.querySelector('label[for="' + cb.id + '"]');
+          if (sideLabel && sideLabel.classList.contains('side-pill')) {
+             let txt = sideLabel.innerText.toLowerCase();
+             if (txt.includes('driver')) qtyText = 'Driver';
+             else if (txt.includes('pass')) qtyText = 'Pass';
+             else qtyText = sideLabel.innerText.trim();
           }
         }
         
-        // Check for Image
-        let imgUrl = cb.getAttribute('data-img');
-        let imgTag = imgUrl && imgUrl !== 'null' ? 
-          `<img src="${imgUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">` : 
-          `<div style="width: 45px; height: 45px; background: #f8fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cbd5e1;"><i class="fa-solid fa-image"></i></div>`;
+        // --- IMAGE SCRAPING FIX ---
+        let rawUrl = cb.getAttribute('data-img');
+        if ((!rawUrl || rawUrl === 'null') && parentDiv) {
+          let popoverImg = parentDiv.querySelector('.image-popover-content img');
+          if (popoverImg) rawUrl = popoverImg.getAttribute('src');
+        }
+
+        let finalImgUrl = rawUrl;
+        if (finalImgUrl && finalImgUrl.indexOf('drive.google.com') !== -1 && finalImgUrl.indexOf('thumbnail') === -1) {
+          let idMatch = finalImgUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (!idMatch) idMatch = finalImgUrl.match(/id=([a-zA-Z0-9_-]+)/);
+          if (idMatch && idMatch.length > 1) {
+            finalImgUrl = 'https://drive.google.com/thumbnail?id=' + idMatch[1] + '&sz=w200';
+          }
+        }
         
+        let imgTag = '';
+        if (finalImgUrl && finalImgUrl !== 'null') {
+          // Width is locked to the column width, height is set to 'auto' to show the full uncropped image
+          imgTag = '<img src="' + finalImgUrl + '" style="width: 55px; height: auto; border-radius: 6px; border: 1px solid #e2e8f0; display: block;">';
+        } else {
+          // Placeholder remains a small rectangle
+          imgTag = '<div style="width: 55px; height: 40px; background: #f8fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cbd5e1;"><i class="fa-solid fa-image"></i></div>';
+        }
+        
+        // Calculate extended price
         let extPrice = price * qtyMultiplier;
         optionsTotal += extPrice;
         
+        // Generate the Table Row HTML
         optionsHtml += `
           <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 10px 5px;">${imgTag}</td>
+            <td style="padding: 10px 5px; width: 55px;">${imgTag}</td>
             <td style="padding: 10px; font-weight: 500; color: #1e293b; font-size: 13px;">${name}</td>
-            <td style="padding: 10px; text-align: center; color: #64748b; font-size: 13px;">${qtyText}</td>
-            <td style="padding: 10px; text-align: right; color: #64748b; font-size: 13px;">$${price.toFixed(2)}</td>
+            <td style="padding: 10px; text-align: center; color: #64748b; font-size: 13px; font-weight: 600;">${qtyText}</td>
+            <td style="padding: 10px; text-align: right; color: #64748b; font-size: 13px;">${unitPriceHtml}</td>
             <td style="padding: 10px; text-align: right; font-weight: 600; color: #1e293b; font-size: 13px;">$${extPrice.toFixed(2)}</td>
           </tr>
         `;
@@ -1118,9 +1233,9 @@
               <tr style="background: #1b4c96; color: white; text-align: left;">
                 <th style="padding: 10px 5px; border-radius: 6px 0 0 6px; width: 55px; font-weight: 500; font-size: 13px;">Img</th>
                 <th style="padding: 10px; font-weight: 500; font-size: 13px;">Description</th>
-                <th style="padding: 10px; text-align: center; font-weight: 500; font-size: 13px;">Qty/Type</th>
-                <th style="padding: 10px; text-align: right; font-weight: 500; font-size: 13px;">Unit Price</th>
-                <th style="padding: 10px; border-radius: 0 6px 6px 0; text-align: right; font-weight: 500; font-size: 13px;">Total</th>
+                <th style="padding: 10px; text-align: center; font-weight: 500; font-size: 13px; width: 80px;">Qty/Type</th>
+                <th style="padding: 10px; text-align: right; font-weight: 500; font-size: 13px; width: 90px;">Unit Price</th>
+                <th style="padding: 10px; border-radius: 0 6px 6px 0; text-align: right; font-weight: 500; font-size: 13px; width: 90px;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -1153,8 +1268,37 @@
         </div>
       `;
       
-      // 5. Trigger Browser Print
-      setTimeout(() => { window.print(); }, 200);
+      // 5. Temporarily change Document Title for PDF Naming
+      const originalTitle = document.title;
+      const cleanClientName = (currentQuoteData.clientName || 'Quote').replace(/[^a-zA-Z0-9 -]/g, "");
+      document.title = `${cleanClientName} - ${currentQuoteData.quoteId || 'Draft'}`;
+      
+      // Hook into native browser event to cleanly restore the title AFTER the print dialog closes
+      window.onafterprint = () => { document.title = originalTitle; };
+
+      // 6. Wait for all images to load before printing (prevents blank images in PDF)
+      const images = layout.querySelectorAll('img');
+      let loadedCount = 0;
+
+      function triggerPrint() {
+        setTimeout(() => { window.print(); }, 400); 
+      }
+
+      if (images.length === 0) {
+        triggerPrint();
+      } else {
+        images.forEach(img => {
+          if (img.complete) {
+            loadedCount++;
+            if (loadedCount === images.length) triggerPrint();
+          } else {
+            img.onload = img.onerror = () => {
+              loadedCount++;
+              if (loadedCount === images.length) triggerPrint();
+            };
+          }
+        });
+      }
     }
 
     // --- THEME TOGGLE LOGIC ---
@@ -1222,6 +1366,23 @@
     let lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
     let currentBasePrice = 0;
     let isProgrammaticUpdate = false; // Safety lock to prevent modals during loading
+
+    // Smart Button State Manager
+    function setQuoteButtonsState(isEdited) {
+      const saveBtn = document.getElementById('save-quote-btn');
+      const printBtn = document.getElementById('print-quote-btn');
+      if (!saveBtn || !printBtn) return;
+      
+      if (isEdited) {
+        // Needs saving: Enable Save, Disable Print
+        saveBtn.disabled = false; saveBtn.style.opacity = '1'; saveBtn.style.cursor = 'pointer';
+        printBtn.disabled = true; printBtn.style.opacity = '0.5'; printBtn.style.cursor = 'not-allowed';
+      } else {
+        // Safe to Print: Disable Save, Enable Print
+        saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; saveBtn.style.cursor = 'not-allowed';
+        printBtn.disabled = false; printBtn.style.opacity = '1'; printBtn.style.cursor = 'pointer';
+      }
+    }
 
     function saveValidState() {
       lastValidState.make = document.getElementById('makeSelect').value;
@@ -2021,6 +2182,11 @@ let teleportHistory = {}; // Keeps track of where we came from
         } else {
           msgContainer.innerHTML = '';
         }
+      }
+      
+      // If a user made this change, mark the quote as edited!
+      if (!isProgrammaticUpdate) {
+        setQuoteButtonsState(true);
       }
     }
   </script>
