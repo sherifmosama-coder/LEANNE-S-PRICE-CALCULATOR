@@ -106,7 +106,8 @@
 
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-    .header { text-align: center; margin-bottom: 30px; margin-top: 20px; padding: 0 30px; }
+    /* Increased margin-top to perfectly clear the top action buttons */
+    .header { text-align: center; margin-bottom: 30px; margin-top: 45px; padding: 0 30px; }
     .header h1 {
       font-size: 28px; font-weight: 600; letter-spacing: 1px; margin-bottom: 5px;
       background: linear-gradient(90deg, var(--text-main), var(--gold-primary));
@@ -116,7 +117,8 @@
 
     /* Logo Theme Switcher */
     .logo-container { margin-bottom: 10px; }
-    .logo-container img { max-width: 280px; height: auto; margin: 0 auto; transition: opacity 0.3s ease; }
+    /* Reduced logo max-width to exactly 70% of its original 280px */
+    .logo-container img { max-width: 196px; height: auto; margin: 0 auto; transition: opacity 0.3s ease; }
     
     /* Increased specificity so these rules always win */
     .logo-container .logo-dark { display: none; }
@@ -240,7 +242,8 @@
     .quote-base { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500;}
     .quote-total { font-size: 28px; font-weight: 700; color: var(--text-main); }
 
-    .input-wrapper::after { content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); pointer-events: none; transition: transform 0.3s ease; }
+    /* Only show the dropdown chevron if the wrapper contains a select element */
+    .input-wrapper:has(select)::after { content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); pointer-events: none; transition: transform 0.3s ease; }
     .loader-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
     .loader { border: 3px solid var(--glass-border); border-top: 3px solid var(--gold-primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -274,7 +277,7 @@
     .btn-confirm:hover { box-shadow: 0 0 15px var(--gold-glow); }
 
     .action-buttons-container {
-      position: absolute; top: 25px; right: 25px; display: flex; gap: 10px; z-index: 10;
+      position: absolute; top: 25px; right: 25px; display: flex; gap: 8px; z-index: 10;
     }
     .theme-btn, .reset-btn {
       background: var(--input-bg); color: var(--gold-primary); border: 1px solid var(--glass-border);
@@ -283,6 +286,23 @@
     .theme-btn:hover { background: var(--glass-border); color: var(--gold-primary); box-shadow: 0 0 10px var(--gold-glow); }
     .reset-btn { color: #c0392b; background: rgba(231, 76, 60, 0.1); border-color: rgba(231, 76, 60, 0.3); }
     .reset-btn:hover { background: rgba(231, 76, 60, 0.15); box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); color: #c0392b;}
+
+    /* Top Row Expandable Buttons */
+    .expand-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--input-bg); color: var(--gold-primary);
+      border: 1px solid var(--glass-border); border-radius: 50px;
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      height: 36px; padding: 0 10px; overflow: hidden; white-space: nowrap;
+    }
+    .expand-btn i { font-size: 14px; width: 16px; text-align: center; }
+    .expand-btn span { max-width: 0; opacity: 0; transition: max-width 0.4s ease, opacity 0.3s ease, margin-left 0.3s ease; }
+    .expand-btn:hover { background: var(--glass-border); box-shadow: 0 0 10px var(--gold-glow); padding: 0 16px; }
+    .expand-btn:hover span { max-width: 200px; opacity: 1; margin-left: 8px; }
+    
+    .expand-btn.logout-btn { color: #e74c3c; border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.1); }
+    .expand-btn.logout-btn:hover { background: rgba(231, 76, 60, 0.15); box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); color: #e74c3c; }
 
     .image-popover-trigger { position: relative; display: inline-flex; align-items: center; color: var(--gold-primary); margin-left: 8px; cursor: pointer; font-size: 14px; pointer-events: auto !important; }
     .image-popover-content { visibility: hidden; opacity: 0; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel-solid); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); padding: 6px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); transition: all 0.2s ease-out; z-index: 1000; width: max-content; pointer-events: none; }
@@ -419,8 +439,8 @@
   <div id="login-screen" class="glass-panel" style="width: 100%; max-width: 400px; text-align: center; margin: 0 auto; align-self: center; position: relative;">
     
     <div style="position: absolute; top: 20px; right: 20px;">
-      <button class="theme-btn" onclick="toggleTheme()" title="Switch Theme">
-        <i class="fa-solid fa-moon theme-icon-class"></i>
+      <button class="expand-btn" onclick="toggleTheme()">
+        <i class="fa-solid fa-moon theme-icon-class"></i><span class="theme-text-class">Switch to dark theme</span>
       </button>
     </div>
 
@@ -435,7 +455,9 @@
       <label>Username</label>
       <div class="input-wrapper">
         <i class="fa-solid fa-user"></i>
-        <input type="text" id="login-username" placeholder="Enter username" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease;">
+        <select id="login-username" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease; appearance: none; cursor: pointer;">
+          <option value="" disabled selected>Select User</option>
+          </select>
       </div>
     </div>
 
@@ -443,7 +465,7 @@
       <label>Passcode</label>
       <div class="input-wrapper">
         <i class="fa-solid fa-lock"></i>
-        <input type="password" id="login-passcode" placeholder="4-Digit Code" maxlength="4" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease; letter-spacing: 5px; text-align: center;">
+        <input type="password" id="login-passcode" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" onkeypress="if(event.key === 'Enter') handleLogin()" style="width: 100%; padding: 14px 15px 14px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; transition: all 0.3s ease; letter-spacing: 5px; text-align: center;">
       </div>
     </div>
 
@@ -455,10 +477,15 @@
 
   <div class="glass-panel" id="main-app-container" style="display: none;">
     <div class="action-buttons-container">
-      <button class="theme-btn" onclick="toggleTheme()" title="Switch Theme">
-        <i class="fa-solid fa-moon theme-icon-class"></i>
+      <button id="admin-panel-btn" class="expand-btn" onclick="openAdminModal()" style="display: none;">
+        <i class="fa-solid fa-users-gear"></i><span>Manage Users</span>
       </button>
-      <button class="reset-btn" onclick="requestFullReset()"><i class="fa-solid fa-rotate-right"></i> Start Over</button>
+      <button class="expand-btn" onclick="toggleTheme()">
+        <i class="fa-solid fa-moon theme-icon-class"></i><span class="theme-text-class">Switch to dark theme</span>
+      </button>
+      <button class="expand-btn logout-btn" onclick="handleLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+      </button>
     </div>
     <div class="header">
       <div class="logo-container">
@@ -471,10 +498,7 @@
     <div id="dashboard-view" style="display: block;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="color: var(--text-main); font-size: 18px;">Welcome, <span id="user-greeting">User</span></h3>
-        <div style="display: flex; gap: 10px;">
-          <button id="admin-panel-btn" class="teleport-btn" onclick="openAdminModal()" style="display: none; margin-left: 0; padding: 8px 15px; border-radius: 8px; font-size: 13px;"><i class="fa-solid fa-users-gear"></i> Manage Users</button>
-          <button class="btn-confirm" onclick="openIntakeModal()" style="font-size: 13px; padding: 8px 15px; border-radius: 8px;"><i class="fa-solid fa-plus"></i> New Quote</button>
-        </div>
+        <button class="btn-confirm" onclick="openIntakeModal()" style="font-size: 15px; padding: 12px 20px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 15px var(--gold-glow); transition: all 0.3s ease;"><i class="fa-solid fa-plus"></i> New Quote</button>
       </div>
       
       <div id="quotes-list-container" style="background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; min-height: 200px;">
@@ -583,7 +607,8 @@
         <label>Client Name *</label>
         <div class="input-wrapper">
           <i class="fa-solid fa-user-tag"></i>
-          <input type="text" id="intake-name" placeholder="Required" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none; transition: border 0.3s;">
+          <input type="text" id="intake-name" list="client-datalist" placeholder="Search or Enter Client Name" oninput="handleClientAutoFill()" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none; transition: border 0.3s;">
+          <datalist id="client-datalist"></datalist>
         </div>
       </div>
 
@@ -618,10 +643,15 @@
         <div style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
       </div>
       
-      <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-        <input type="text" id="new-user-name" placeholder="New Username" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
-        <input type="text" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center;">
-        <button class="btn-confirm" onclick="addNewUser()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="new-user-fullname" placeholder="Full Name (e.g. John Doe)" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="new-user-name" placeholder="Login ID" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
+          <input type="password" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center; letter-spacing: 2px;">
+          <button class="btn-confirm" onclick="addNewUser()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
+        </div>
       </div>
       
       <div class="modal-buttons">
@@ -630,9 +660,49 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="change-pass-modal" style="z-index: 1005;">
+    <div class="modal-content" style="max-width: 350px; text-align: center;">
+      <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-key" style="color:var(--gold-primary);"></i> Change Passcode</h3>
+      <p style="margin-bottom: 20px;">Enter a new 4-digit numeric code.</p>
+      
+      <div class="input-group" style="margin-bottom: 25px; text-align: left;">
+        <div class="input-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="new-user-pass-edit" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 15px; outline: none; text-align: center; letter-spacing: 5px;">
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeChangePassModal()" style="flex: 1;">Cancel</button>
+        <button class="btn-confirm" id="confirm-pass-btn" onclick="confirmChangePasscode()" style="flex: 1;">Update</button>
+      </div>
+    </div>
+  </div>
+
     </div>
   </div>
   <div id="print-layout" style="display: none;"></div>
+
+  <div class="modal-overlay" id="custom-alert-modal" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 320px; text-align: center; padding: 30px 20px;">
+      <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--gold-primary); margin-bottom: 15px;"></i>
+      <h3 style="margin-bottom: 10px; color: var(--text-main);">Notice</h3>
+      <p id="custom-alert-msg" style="margin-bottom: 25px; color: var(--text-muted); font-size: 14px;"></p>
+      <button class="btn-confirm" onclick="closeCustomAlert()" style="width: 100%;">OK</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="custom-confirm-modal" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 320px; text-align: center; padding: 30px 20px;">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #e74c3c; margin-bottom: 15px;"></i>
+      <h3 style="margin-bottom: 10px; color: var(--text-main);">Confirm Action</h3>
+      <p id="custom-confirm-msg" style="margin-bottom: 25px; color: var(--text-muted); font-size: 14px;"></p>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-cancel" onclick="closeCustomConfirm(false)" style="flex: 1;">Cancel</button>
+        <button class="btn-confirm" onclick="closeCustomConfirm(true)" style="flex: 1; background: #e74c3c; border-color: #e74c3c; box-shadow: 0 4px 15px rgba(231,76,60,0.3);">Yes, Proceed</button>
+      </div>
+    </div>
+  </div>
   <script>
     let globalTruckData = [];
     let fiberglassBaseData = [];
@@ -693,6 +763,30 @@
         .verifyLogin(user, pass);
     }
 
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('main-app-container').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'block';
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-passcode').value = '';
+      document.getElementById('admin-panel-btn').style.display = 'none';
+      
+      // Reset the Login button back to its initial active state
+      const loginBtn = document.getElementById('login-btn');
+      if (loginBtn) {
+        loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Secure Login';
+        loginBtn.disabled = false;
+      }
+      
+      // Wipe state memory cleanly
+      isProgrammaticUpdate = true;
+      requestFullReset();
+      currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
+      lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
+      currentBasePrice = 0;
+      isProgrammaticUpdate = false;
+    }
+
     // --- DASHBOARD & INTAKE LOGIC ---
     let currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
 
@@ -745,17 +839,33 @@
       document.getElementById('intake-modal').classList.remove('active');
     }
 
+    function handleClientAutoFill() {
+      const inputName = document.getElementById('intake-name').value.trim().toLowerCase();
+      const match = globalClientsList.find(c => c.name.toLowerCase() === inputName);
+      if (match) {
+        document.getElementById('intake-phone').value = match.phone || '';
+        document.getElementById('intake-email').value = match.email || '';
+      }
+    }
+
     function startNewQuote() {
       const name = document.getElementById('intake-name').value.trim();
+      const phone = document.getElementById('intake-phone').value.trim();
+      const email = document.getElementById('intake-email').value.trim();
+
       if (!name) {
+        customAlert('Please enter a Client Name.');
         document.getElementById('intake-name').style.borderColor = '#e74c3c';
         return;
       }
       
+      // Save client in the background
+      google.script.run.saveOrUpdateClientDB(name, phone, email);
+
       currentQuoteData = {
         clientName: name,
-        clientPhone: document.getElementById('intake-phone').value.trim(),
-        clientEmail: document.getElementById('intake-email').value.trim(),
+        clientPhone: phone,
+        clientEmail: email,
         quoteId: null, // Null means this is a brand new quote
         revisionOf: null
       };
@@ -966,7 +1076,7 @@
             document.getElementById('display-client-name').innerHTML = `${currentQuoteData.clientName} <span style="font-size:10px; color:var(--text-muted);">(Saved: ${res.newQuoteId})</span>`;
             
             setQuoteButtonsState(false); // Saved & safe to print!
-          } else { alert("Error saving: " + res.message); }
+          } else { customAlert("Error saving: " + res.message); }
         })
         .saveQuoteToDB(dbPayload, JSON.stringify(configState));
     }
@@ -984,31 +1094,97 @@
 
     function renderAdminUsers(users) {
       const list = document.getElementById('admin-user-list');
-      if(users.length === 0) { list.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No standard users found.</div>'; return; }
+      if(users.length === 0) { list.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No active standard users found.</div>'; return; }
       
       let html = '';
       users.forEach(u => {
-        html += `<div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--glass-border); font-size: 13px;">
-          <div><strong style="color: var(--text-main);">${u.username}</strong> <span style="color: var(--gold-primary); font-size: 11px;">(${u.id})</span></div>
-          <div style="color: var(--text-muted);">Pass: ${u.passcode} | Status: <span style="color: ${u.status === 'Active' ? '#2ecc71' : '#e74c3c'};">${u.status}</span></div>
-        </div>`;
+        let displayPass = "*".repeat(Math.max(0, String(u.passcode).length - 1)) + String(u.passcode).slice(-1); // Mask all but last digit
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--glass-border); font-size: 13px; background: rgba(255,255,255,0.4); border-radius: 6px; margin-bottom: 6px;">
+            <div>
+              <strong style="color: var(--text-main); font-size: 14px;">${u.fullName || u.username}</strong> <span style="color: var(--gold-primary); font-size: 11px;">(${u.id})</span>
+              <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Login ID: <strong>${u.username}</strong> | Pass: ${displayPass}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="editUserPasscode('${u.id}')" style="background: var(--gold-primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="Change Passcode"><i class="fa-solid fa-key"></i></button>
+              <button onclick="deleteUser('${u.id}')" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="Delete User"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>`;
       });
       list.innerHTML = html;
     }
 
     function addNewUser() {
+      const fullName = document.getElementById('new-user-fullname').value.trim();
       const name = document.getElementById('new-user-name').value.trim();
       const pass = document.getElementById('new-user-pass').value.trim();
-      if(!name || pass.length !== 4) { alert("Please enter a username and a 4-digit passcode."); return; }
       
-      document.getElementById('new-user-name').value = 'Saving...';
+      if(!name || pass.length !== 4) { customAlert("Please enter a Login ID and a 4-digit numeric passcode."); return; }
+      if(!fullName) { customAlert("Please enter the user's Full Name."); return; }
+      if(!/^\d{4}$/.test(pass)) { customAlert("Passcode must be exactly 4 digits."); return; }
+      
+      const addBtn = document.querySelector('#new-user-pass').nextElementSibling;
+      addBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      
       google.script.run.withSuccessHandler(res => {
         if(res.success) {
+          document.getElementById('new-user-fullname').value = '';
           document.getElementById('new-user-name').value = '';
           document.getElementById('new-user-pass').value = '';
+          addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
           openAdminModal(); // Refresh list
-        } else { alert("Failed to add user."); }
-      }).saveNewUserDB(name, pass);
+        } else { customAlert("Failed to add user: " + res.message); addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add'; }
+      }).saveNewUserDB(name, fullName, pass);
+    }
+
+    let targetEditUserId = null;
+
+    function editUserPasscode(userId) {
+      targetEditUserId = userId;
+      document.getElementById('new-user-pass-edit').value = '';
+      document.getElementById('change-pass-modal').classList.add('active');
+      // Tiny delay to ensure modal is visible before focusing the input
+      setTimeout(() => document.getElementById('new-user-pass-edit').focus(), 100); 
+    }
+
+    function closeChangePassModal() {
+      document.getElementById('change-pass-modal').classList.remove('active');
+      targetEditUserId = null;
+    }
+
+    function confirmChangePasscode() {
+      if (!targetEditUserId) return;
+      
+      const newPass = document.getElementById('new-user-pass-edit').value.trim();
+      if (!/^\d{4}$/.test(newPass)) { 
+        alert("Passcode must be exactly 4 numeric digits."); 
+        return; 
+      }
+      
+      const btn = document.getElementById('confirm-pass-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+
+      google.script.run.withSuccessHandler(res => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if (res.success) {
+          closeChangePassModal();
+          openAdminModal(); // Refresh list to show updated mask
+        } else { 
+          alert("Failed to update passcode."); 
+        }
+      }).updateUserPasscodeDB(targetEditUserId, newPass);
+    }
+
+    function deleteUser(userId) {
+      customConfirm("Are you sure you want to delete this user? They will immediately lose access.", () => {
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) openAdminModal(); // Refresh list
+          else customAlert("Failed to delete user.");
+        }).deleteUserDB(userId);
+      });
     }
 
     // --- PHASE 5: PDF & PRINT ENGINE ---
@@ -1310,22 +1486,76 @@
       body.setAttribute('data-theme', newTheme);
       localStorage.setItem('realtruck_theme', newTheme);
       
-      // Update all theme icons on screen (Login + App)
+      // Update all theme icons and text on screen (Login + App)
       const icons = document.querySelectorAll('.theme-icon-class');
       icons.forEach(icon => {
         icon.className = newTheme === 'dark' ? 'fa-solid fa-sun theme-icon-class' : 'fa-solid fa-moon theme-icon-class';
       });
+      
+      const texts = document.querySelectorAll('.theme-text-class');
+      texts.forEach(text => {
+        text.innerText = newTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+      });
+    }
+
+    // Global Data
+    let globalClientsList = [];
+    let customConfirmCallback = null;
+
+    // --- CUSTOM MODAL LOGIC ---
+    function customAlert(msg) {
+      document.getElementById('custom-alert-msg').innerText = msg;
+      document.getElementById('custom-alert-modal').classList.add('active');
+    }
+    function closeCustomAlert() {
+      document.getElementById('custom-alert-modal').classList.remove('active');
+    }
+    
+    function customConfirm(msg, callback) {
+      document.getElementById('custom-confirm-msg').innerText = msg;
+      customConfirmCallback = callback;
+      document.getElementById('custom-confirm-modal').classList.add('active');
+    }
+    function closeCustomConfirm(isConfirmed) {
+      document.getElementById('custom-confirm-modal').classList.remove('active');
+      if (isConfirmed && customConfirmCallback) customConfirmCallback();
     }
 
     // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
+      // Fetch Active Users for Login Dropdown
+      google.script.run.withSuccessHandler(users => {
+        const select = document.getElementById('login-username');
+        users.forEach(u => {
+          let opt = document.createElement('option');
+          opt.value = u.username;
+          opt.text = u.username; // Now properly displays the Username in the dropdown UI!
+          select.appendChild(opt);
+        });
+      }).getActiveUsersList();
+
+      // Fetch Clients for Intake Auto-fill
+      google.script.run.withSuccessHandler(clients => {
+        globalClientsList = clients;
+        const datalist = document.getElementById('client-datalist');
+        clients.forEach(c => {
+          let opt = document.createElement('option');
+          opt.value = c.name;
+          datalist.appendChild(opt);
+        });
+      }).getClientsDB();
+
       // Load Saved Theme Immediately
       const savedTheme = localStorage.getItem('realtruck_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
       const icons = document.querySelectorAll('.theme-icon-class');
+      const texts = document.querySelectorAll('.theme-text-class');
       if(savedTheme === 'dark') {
         icons.forEach(icon => icon.className = 'fa-solid fa-sun theme-icon-class');
+        texts.forEach(text => text.innerText = 'Switch to light theme');
+      } else {
+        texts.forEach(text => text.innerText = 'Switch to dark theme');
       }
 
       // Fetch Logic Rules in the background
@@ -1813,7 +2043,9 @@
             <span class="image-popover-trigger" onclick="toggleImagePopover(this, event)">
               <i class="fa-solid fa-image"></i>
               <div class="image-popover-content">
-                <img src="${displayImageUrl}" loading="lazy" alt="Option Image">
+                <a href="${displayImageUrl}" target="_blank" onclick="event.stopPropagation();" title="Click to view full size">
+                  <img src="${displayImageUrl}" loading="lazy" alt="Option Image" style="cursor: zoom-in;">
+                </a>
               </div>
             </span>` : '';
           // ---------------------------
