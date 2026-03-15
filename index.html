@@ -308,7 +308,7 @@
     .image-popover-content { visibility: hidden; opacity: 0; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--panel-solid); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); padding: 6px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); transition: all 0.2s ease-out; z-index: 1000; width: max-content; pointer-events: none; }
     .image-popover-content img { max-width: 220px; max-height: 220px; border-radius: 6px; display: block; object-fit: cover; }
     .image-popover-content::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: var(--panel-solid) transparent transparent transparent; }
-    .image-popover-content.active { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+    .image-popover-content.active { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 
     /* =========================================
        📱 MOBILE OPTIMIZATION (Responsive Design) 
@@ -2031,20 +2031,24 @@
           // --- IMAGE POPOVER LOGIC ---
           let rawImageUrl = String(item['Image URL'] || '').trim();
           let displayImageUrl = rawImageUrl;
+          let fullViewUrl = rawImageUrl; // Dedicated URL for the new tab
           
           if (rawImageUrl.includes('drive.google.com/file/d/')) {
             const match = rawImageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (match && match[1]) {
+              // Thumbnail for the popover preview
               displayImageUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+              // Standard viewer link for the new tab
+              fullViewUrl = `https://drive.google.com/file/d/${match[1]}/view`; 
             }
           }
           
           const imagePopoverHTML = displayImageUrl ? `
             <span class="image-popover-trigger" onclick="toggleImagePopover(this, event)">
               <i class="fa-solid fa-image"></i>
-              <div class="image-popover-content">
-                <a href="${displayImageUrl}" target="_blank" onclick="event.stopPropagation();" title="Click to view full size">
-                  <img src="${displayImageUrl}" loading="lazy" alt="Option Image" style="cursor: zoom-in;">
+              <div class="image-popover-content" onclick="event.stopPropagation();">
+                <a href="${fullViewUrl}" target="_blank" title="Click to view full size">
+                  <img src="${displayImageUrl}" loading="lazy" alt="Option Image" style="cursor: zoom-in; border-radius: 4px;">
                 </a>
               </div>
             </span>` : '';
