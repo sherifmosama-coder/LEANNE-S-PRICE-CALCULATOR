@@ -477,6 +477,9 @@
 
   <div class="glass-panel" id="main-app-container" style="display: none;">
     <div class="action-buttons-container">
+      <button id="admin-tc-btn" class="expand-btn" onclick="openAdminTCModal()" style="display: none; border-color: var(--gold-primary);">
+        <i class="fa-solid fa-scale-balanced"></i><span>Manage T&Cs</span>
+      </button>
       <button id="admin-panel-btn" class="expand-btn" onclick="openAdminModal()" style="display: none;">
         <i class="fa-solid fa-users-gear"></i><span>Manage Users</span>
       </button>
@@ -577,6 +580,31 @@
 
       <div id="scroll-anchor"></div>
       <div id="options-container"></div>
+
+      <div id="tc-composer-section" style="margin-bottom: 25px; padding: 25px; border-radius: 12px; display: block; background: rgba(27, 76, 150, 0.03); border: 1px dashed var(--glass-border);">
+         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+           <h4 style="color: var(--text-main); font-size: 16px; font-weight: 800;"><i class="fa-solid fa-file-signature" style="color: var(--gold-primary); margin-right: 5px;"></i> Quote Terms & Conditions</h4>
+           <div class="input-wrapper" style="width: 250px;">
+              <select id="tc-template-select" onchange="loadTCTemplate()" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--input-bg); font-size: 12px; cursor: pointer; color: var(--text-main);">
+                 <option value="">Custom (No Template)</option>
+                 </select>
+           </div>
+         </div>
+         
+         <div id="tc-current-statements" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+         
+         <div style="display: flex; gap: 10px;">
+           <input type="text" id="tc-new-statement" list="tc-pool-datalist" placeholder="Type a new condition or search pool..." style="flex:1; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--input-bg); font-size: 13px; outline: none; color: var(--text-main);">
+           <datalist id="tc-pool-datalist"></datalist>
+           <button class="btn-confirm" onclick="addTCStatementToQuote()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
+         </div>
+         
+         <div id="tc-save-template-prompt" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--glass-border); align-items: center; gap: 10px;">
+           <input type="checkbox" id="tc-save-as-template-cb" checked style="accent-color: var(--gold-primary); width: 16px; height: 16px; cursor: pointer;">
+           <label style="font-size: 12px; color: var(--text-muted); cursor: pointer;" for="tc-save-as-template-cb">Save this as a new Template:</label>
+           <input type="text" id="tc-new-template-name" placeholder="Template Name" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--input-bg); font-size: 12px; flex: 1; outline: none; color: var(--text-main);">
+         </div>
+      </div>
 
       <div id="quote-dashboard" style="flex-direction: column; align-items: stretch; gap: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -683,6 +711,17 @@
   </div>
   <div id="print-layout" style="display: none;"></div>
 
+  <div class="modal-overlay" id="admin-tc-modal" style="z-index: 1002;">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header" style="margin-bottom: 15px;">
+        <h3><i class="fa-solid fa-scale-balanced" style="color: var(--gold-primary);"></i> Manage Terms & Conditions</h3>
+        <button class="close-btn" onclick="closeAdminTCModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="admin-tc-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+        </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="custom-alert-modal" style="z-index: 9999;">
     <div class="modal-content" style="max-width: 320px; text-align: center; padding: 30px 20px;">
       <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--gold-primary); margin-bottom: 15px;"></i>
@@ -738,6 +777,7 @@
             // Phase 6: Show Admin button if authorized
             if (currentUser.role === 'Admin') {
               document.getElementById('admin-panel-btn').style.display = 'inline-flex';
+              document.getElementById('admin-tc-btn').style.display = 'inline-flex';
             }
             
             // Transition: Hide Login, Show Main App (Dashboard Default)
@@ -770,6 +810,7 @@
       document.getElementById('login-username').value = '';
       document.getElementById('login-passcode').value = '';
       document.getElementById('admin-panel-btn').style.display = 'none';
+      document.getElementById('admin-tc-btn').style.display = 'none';
       
       // Reset the Login button back to its initial active state
       const loginBtn = document.getElementById('login-btn');
@@ -1438,7 +1479,7 @@
           </div>
           
           <div class="print-no-break" style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-            <p style="margin: 0 0 5px 0;">This quote is valid for 30 days. Prices, specifications, and availability are subject to change.</p>
+            ${currentQuoteTCs.map(stmt => `<p style="margin: 0; margin-bottom: 4px;">&bull; ${stmt}</p>`).join('') || '<p style="margin: 0;">This quote is valid for 30 days. Prices, specifications, and availability are subject to change.</p>'}
             <p style="margin: 0;"><strong>Sterling Fleet Outfitters</strong> | REALTRUCK Authorized Dealer</p>
           </div>
         </div>
@@ -1501,6 +1542,97 @@
     // Global Data
     let globalClientsList = [];
     let customConfirmCallback = null;
+    
+    // TC Engine State
+    let tcPool = [];
+    let tcTemplates = [];
+    let currentQuoteTCs = []; // Array of string statements applied to current quote
+
+    // Initialize TC Data
+    function fetchTCData() {
+      google.script.run.withSuccessHandler(data => {
+        tcPool = data.pool;
+        tcTemplates = data.templates;
+        
+        // Populate Datalist
+        const dl = document.getElementById('tc-pool-datalist');
+        dl.innerHTML = '';
+        tcPool.forEach(s => {
+          let opt = document.createElement('option');
+          opt.value = s.text;
+          dl.appendChild(opt);
+        });
+        
+        // Populate Template Dropdown
+        const select = document.getElementById('tc-template-select');
+        select.innerHTML = '<option value="">Custom (No Template)</option>';
+        let defaultTpl = null;
+        tcTemplates.forEach(t => {
+          let opt = document.createElement('option');
+          opt.value = t.id;
+          opt.text = t.name + (t.isDefault ? " (Default)" : "");
+          select.appendChild(opt);
+          if (t.isDefault) defaultTpl = t;
+        });
+        
+        // Auto-load Default Template if starting a new quote
+        if (defaultTpl && currentQuoteTCs.length === 0) {
+          select.value = defaultTpl.id;
+          loadTCTemplate();
+        }
+      }).getTCData();
+    }
+    
+    // Add Chip to Quote
+    function addTCStatementToQuote() {
+      const input = document.getElementById('tc-new-statement');
+      const text = input.value.trim();
+      if (!text) return;
+      if (!currentQuoteTCs.includes(text)) {
+        currentQuoteTCs.push(text);
+        renderTCComposer();
+        document.getElementById('tc-save-template-prompt').style.display = 'flex'; // Show template save prompt since config changed
+      }
+      input.value = '';
+    }
+    
+    // Remove Chip
+    function removeTCStatement(index) {
+      currentQuoteTCs.splice(index, 1);
+      renderTCComposer();
+      document.getElementById('tc-save-template-prompt').style.display = 'flex';
+    }
+    
+    // Load Template
+    function loadTCTemplate() {
+      const tplId = document.getElementById('tc-template-select').value;
+      if (!tplId) return;
+      const tpl = tcTemplates.find(t => t.id === tplId);
+      if (tpl) {
+        currentQuoteTCs = tpl.statements.split('||').map(s => s.trim()).filter(s => s !== '');
+        renderTCComposer();
+        document.getElementById('tc-save-template-prompt').style.display = 'none'; // Hidden until modified
+      }
+    }
+    
+    // Render Chips
+    function renderTCComposer() {
+      const container = document.getElementById('tc-current-statements');
+      container.innerHTML = '';
+      currentQuoteTCs.forEach((stmt, idx) => {
+        const isNew = !tcPool.some(p => p.text.toLowerCase() === stmt.toLowerCase());
+        
+        container.innerHTML += `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; background: #fff; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <div style="flex: 1;">
+              <p style="font-size: 13px; color: var(--text-main); margin: 0; line-height: 1.4;">${stmt}</p>
+              ${isNew ? `<div style="margin-top: 5px; font-size: 11px; color: var(--gold-primary); display: flex; align-items: center; gap: 5px;"><input type="checkbox" checked class="tc-save-pool-cb" data-text="${stmt}"> Save to Global Pool</div>` : ''}
+            </div>
+            <button onclick="removeTCStatement(${idx})" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; padding: 5px;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      });
+    }
 
     // --- CUSTOM MODAL LOGIC ---
     function customAlert(msg) {
@@ -1519,6 +1651,94 @@
     function closeCustomConfirm(isConfirmed) {
       document.getElementById('custom-confirm-modal').classList.remove('active');
       if (isConfirmed && customConfirmCallback) customConfirmCallback();
+    }
+
+    // --- ADMIN TC MODAL LOGIC ---
+    function openAdminTCModal() {
+      document.getElementById('admin-tc-modal').classList.add('active');
+      renderAdminTCUI();
+    }
+    
+    function closeAdminTCModal() {
+      document.getElementById('admin-tc-modal').classList.remove('active');
+    }
+
+    function renderAdminTCUI() {
+      let html = `
+        <div style="margin-bottom: 20px;">
+          <h4 style="color: var(--gold-primary); margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Manage Templates</h4>
+          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+      `;
+      
+      if(tcTemplates.length === 0) html += `<p style="font-size:12px; color:var(--text-muted);">No templates saved yet.</p>`;
+      
+      tcTemplates.forEach(t => {
+         html += `
+           <div style="background: var(--input-bg); padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+             <div>
+               <strong style="font-size:14px;">${t.name}</strong> ${t.isDefault ? '<span style="background: var(--gold-primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px;">Default</span>' : ''}
+               <p style="font-size: 11px; color: var(--text-muted); margin: 5px 0 0 0;">${t.statements.split('||').length} statements</p>
+             </div>
+             <div style="display: flex; gap: 8px;">
+               ${!t.isDefault ? `<button onclick="adminSetDefaultTCTemplate('${t.id}', '${t.name}', '${t.statements.replace(/'/g, "\\'")}')" class="theme-btn" style="padding: 6px 12px; font-size: 11px;">Set Default</button>` : ''}
+               <button onclick="adminDeleteTCTemplate('${t.id}')" class="btn-cancel" style="padding: 6px 12px; font-size: 11px; background: #ffebee; color: #e74c3c; border: none;">Delete</button>
+             </div>
+           </div>
+         `;
+      });
+      html += `</div></div>`;
+
+      // Statement Pool
+      html += `
+        <div>
+          <h4 style="color: var(--gold-primary); margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Global Statement Pool</h4>
+          <div style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto; padding-right: 5px;">
+      `;
+      
+      if(tcPool.length === 0) html += `<p style="font-size:12px; color:var(--text-muted);">Pool is empty.</p>`;
+      
+      tcPool.forEach(p => {
+         html += `
+           <div style="background: var(--input-bg); padding: 10px; border: 1px solid var(--glass-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+             <span style="font-size: 12px; color: var(--text-main); flex:1;">${p.text}</span>
+             <button onclick="adminDeleteTCStatement('${p.id}')" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
+           </div>
+         `;
+      });
+      html += `</div></div>`;
+
+      document.getElementById('admin-tc-content').innerHTML = html;
+    }
+
+    function adminSetDefaultTCTemplate(id, name, statements) {
+      document.getElementById('admin-tc-content').innerHTML = '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--gold-primary);"></i><p>Updating...</p></div>';
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) fetchTCData(); // Re-fetch all data (which triggers UI refresh later)
+        else customAlert("Failed to update default.");
+        setTimeout(() => openAdminTCModal(), 1000); // refresh modal UI
+      }).adminUpdateTCTemplate(id, name, statements, true);
+    }
+
+    function adminDeleteTCTemplate(id) {
+      customConfirm("Are you sure you want to delete this Template?", () => {
+        document.getElementById('admin-tc-content').innerHTML = '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--gold-primary);"></i><p>Deleting...</p></div>';
+        google.script.run.withSuccessHandler(res => {
+          if(res.success) fetchTCData();
+          else customAlert("Failed to delete template.");
+          setTimeout(() => openAdminTCModal(), 1000);
+        }).adminDeleteTCTemplate(id);
+      });
+    }
+
+    function adminDeleteTCStatement(id) {
+      customConfirm("Are you sure you want to delete this statement from the global pool?", () => {
+        document.getElementById('admin-tc-content').innerHTML = '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--gold-primary);"></i><p>Deleting...</p></div>';
+        google.script.run.withSuccessHandler(res => {
+          if(res.success) fetchTCData();
+          else customAlert("Failed to delete statement.");
+          setTimeout(() => openAdminTCModal(), 1000);
+        }).adminDeleteTCStatementDB(id);
+      });
     }
 
     // Initialize App
