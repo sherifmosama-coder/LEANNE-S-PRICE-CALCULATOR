@@ -712,12 +712,17 @@
   <div id="print-layout" style="display: none;"></div>
 
   <div class="modal-overlay" id="admin-tc-modal" style="z-index: 1002;">
-    <div class="modal-content" style="max-width: 650px;">
-      <div class="modal-header" style="margin-bottom: 15px;">
-        <h3><i class="fa-solid fa-scale-balanced" style="color: var(--gold-primary);"></i> Manage Terms & Conditions</h3>
-        <button class="close-btn" onclick="closeAdminTCModal()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-content" style="max-width: 750px; width: 95%; padding: 25px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold-primary); padding-bottom: 15px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 12px; font-size: 20px;">
+          <i class="fa-solid fa-scale-balanced" style="color: var(--gold-primary);"></i> 
+          Terms & Conditions Manager
+        </h3>
+        <button onclick="closeAdminTCModal()" style="background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      <div id="admin-tc-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+      <div id="admin-tc-content" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
         </div>
     </div>
   </div>
@@ -1094,17 +1099,35 @@
         }
       });
       
-      // 2. Gather base truck data
+      // 2. Gather TC statements & templates to save globally
+      let newStatementsToSave = [];
+      document.querySelectorAll('.tc-save-pool-cb:checked').forEach(cb => {
+        newStatementsToSave.push(cb.getAttribute('data-text'));
+      });
+      
+      let newTemplatesToSave = [];
+      const templateCb = document.getElementById('tc-save-as-template-cb');
+      const templateNameInput = document.getElementById('tc-new-template-name');
+      // Only save template if the prompt is visible, checked, and has a name
+      if (document.getElementById('tc-save-template-prompt').style.display !== 'none' && templateCb && templateCb.checked) {
+        let tName = templateNameInput.value.trim();
+        if (tName && currentQuoteTCs.length > 0) {
+          newTemplatesToSave.push({ name: tName, statements: currentQuoteTCs.join('||') });
+        }
+      }
+
+      // 3. Gather base truck data
       let dbPayload = {
         quoteId: currentQuoteData.quoteId, revisionOf: currentQuoteData.revisionOf, createdBy: currentUser.name,
         clientName: currentQuoteData.clientName, clientPhone: currentQuoteData.clientPhone, clientEmail: currentQuoteData.clientEmail,
         make: document.getElementById('makeSelect').value, model: document.getElementById('modelSelect').value,
         sizeCategory: document.getElementById('sizeChip').innerText.trim(), capType: document.querySelector('input[name="capType"]:checked').value,
         bedLength: document.getElementById('bedLengthSelect').value, capModel: document.getElementById('capModelSelect').value,
-        totalPrice: document.getElementById('total-price-display').innerText.replace('$','').replace(',','')
+        totalPrice: document.getElementById('total-price-display').innerText.replace('$','').replace(',',''),
+        tcText: currentQuoteTCs.join('||') // Link compiled TCs to this specific quote!
       };
 
-      // 3. Send to Google Sheets
+      // 4. Send to Google Sheets
       google.script.run
         .withSuccessHandler(function(res) {
           saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
@@ -1115,6 +1138,15 @@
             currentQuoteData.quoteId = res.newQuoteId; 
             currentQuoteData.revisionOf = res.newQuoteId; 
             document.getElementById('display-client-name').innerHTML = `${currentQuoteData.clientName} <span style="font-size:10px; color:var(--text-muted);">(Saved: ${res.newQuoteId})</span>`;
+            
+            // Fire off the background task to save new TC statements & templates
+            if (newStatementsToSave.length > 0 || newTemplatesToSave.length > 0) {
+               google.script.run.withSuccessHandler(() => {
+                  fetchTCData(); // Silently refresh the pool & dropdowns 
+                  document.getElementById('tc-save-template-prompt').style.display = 'none'; // Hide prompt
+                  if (templateNameInput) templateNameInput.value = ''; // Clear input
+               }).saveSmartTC(newStatementsToSave, newTemplatesToSave);
+            }
             
             setQuoteButtonsState(false); // Saved & safe to print!
           } else { customAlert("Error saving: " + res.message); }
@@ -1565,7 +1597,9 @@
         
         // Populate Template Dropdown
         const select = document.getElementById('tc-template-select');
+        const currentVal = select.value;
         select.innerHTML = '<option value="">Custom (No Template)</option>';
+        
         let defaultTpl = null;
         tcTemplates.forEach(t => {
           let opt = document.createElement('option');
@@ -1663,59 +1697,186 @@
       document.getElementById('admin-tc-modal').classList.remove('active');
     }
 
+    let editingTemplateId = null; // Track if we are editing an existing template
+
     function renderAdminTCUI() {
+      editingTemplateId = null; // Reset state
       let html = `
-        <div style="margin-bottom: 20px;">
-          <h4 style="color: var(--gold-primary); margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Manage Templates</h4>
-          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 25px;">
+          <div class="glass-panel" style="padding: 20px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase;"><i class="fa-solid fa-layer-group"></i> Saved Templates</h4>
+              <button class="btn-confirm" onclick="startNewTemplateEdit()" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-plus"></i> New Template</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto;">
       `;
       
-      if(tcTemplates.length === 0) html += `<p style="font-size:12px; color:var(--text-muted);">No templates saved yet.</p>`;
+      if(tcTemplates.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center;">No templates saved.</p>`;
       
       tcTemplates.forEach(t => {
          html += `
            <div style="background: var(--input-bg); padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
              <div>
-               <strong style="font-size:14px;">${t.name}</strong> ${t.isDefault ? '<span style="background: var(--gold-primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px;">Default</span>' : ''}
-               <p style="font-size: 11px; color: var(--text-muted); margin: 5px 0 0 0;">${t.statements.split('||').length} statements</p>
+               <strong style="font-size:14px; color: var(--text-main);">${t.name}</strong> 
+               ${t.isDefault ? '<span style="background: var(--gold-primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-left: 5px; font-weight: 700;">DEFAULT</span>' : ''}
+               <p style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">${t.statements.split('||').length} Clauses</p>
              </div>
-             <div style="display: flex; gap: 8px;">
-               ${!t.isDefault ? `<button onclick="adminSetDefaultTCTemplate('${t.id}', '${t.name}', '${t.statements.replace(/'/g, "\\'")}')" class="theme-btn" style="padding: 6px 12px; font-size: 11px;">Set Default</button>` : ''}
-               <button onclick="adminDeleteTCTemplate('${t.id}')" class="btn-cancel" style="padding: 6px 12px; font-size: 11px; background: #ffebee; color: #e74c3c; border: none;">Delete</button>
+             <div style="display: flex; gap: 6px;">
+               <button onclick="editTCTemplate('${t.id}')" class="theme-btn" style="padding: 6px; width: 32px;" title="Edit Template Contents"><i class="fa-solid fa-pen-to-square"></i></button>
+               ${!t.isDefault ? `<button onclick="adminSetDefaultTCTemplate('${t.id}', '${t.name.replace(/'/g, "\\'")}', '${t.statements.replace(/'/g, "\\'")}')" class="theme-btn" style="padding: 6px 10px; font-size: 11px;">Set Default</button>` : ''}
+               <button onclick="adminDeleteTCTemplate('${t.id}')" class="btn-cancel" style="padding: 6px; width: 32px; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: none;" title="Delete Template"><i class="fa-solid fa-trash"></i></button>
              </div>
            </div>
          `;
       });
-      html += `</div></div>`;
+      html += `</div></div>
 
-      // Statement Pool
-      html += `
-        <div>
-          <h4 style="color: var(--gold-primary); margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Global Statement Pool</h4>
-          <div style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto; padding-right: 5px;">
+          <div class="glass-panel" style="padding: 20px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase; margin-bottom: 15px;"><i class="fa-solid fa-database"></i> Global Statement Pool</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
       `;
       
-      if(tcPool.length === 0) html += `<p style="font-size:12px; color:var(--text-muted);">Pool is empty.</p>`;
+      if(tcPool.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center;">Pool is empty.</p>`;
       
       tcPool.forEach(p => {
          html += `
            <div style="background: var(--input-bg); padding: 10px; border: 1px solid var(--glass-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-             <span style="font-size: 12px; color: var(--text-main); flex:1;">${p.text}</span>
-             <button onclick="adminDeleteTCStatement('${p.id}')" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
+             <span style="font-size: 12px; color: var(--text-main); flex:1; line-height: 1.4;">${p.text}</span>
+             <button onclick="adminDeleteTCStatement('${p.id}')" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; padding: 5px; opacity: 0.6; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'"><i class="fa-solid fa-trash-can"></i></button>
            </div>
          `;
       });
-      html += `</div></div>`;
+      html += `</div></div></div>`;
 
       document.getElementById('admin-tc-content').innerHTML = html;
     }
 
-    function adminSetDefaultTCTemplate(id, name, statements) {
-      document.getElementById('admin-tc-content').innerHTML = '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--gold-primary);"></i><p>Updating...</p></div>';
+    // --- SMART TEMPLATE EDITOR VIEW ---
+    let tempEditStatements = [];
+
+    function startNewTemplateEdit() {
+      editingTemplateId = null;
+      tempEditStatements = [];
+      renderTemplateEditorUI("Create New Template");
+    }
+
+    function editTCTemplate(id) {
+      const t = tcTemplates.find(x => x.id === id);
+      if(!t) return;
+      editingTemplateId = id;
+      tempEditStatements = t.statements.split('||').filter(s => s.trim() !== '');
+      renderTemplateEditorUI(`Editing: ${t.name}`, t.name, t.isDefault);
+    }
+
+    function renderTemplateEditorUI(title, existingName = "", isDefault = false) {
+      let html = `
+        <div style="animation: fadeInUp 0.3s ease-out;">
+          <button onclick="renderAdminTCUI()" class="theme-btn" style="margin-bottom: 15px; font-size: 11px; padding: 5px 10px;"><i class="fa-solid fa-arrow-left"></i> Back to Lists</button>
+          <h4 style="color: var(--gold-primary); margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">${title}</h4>
+          
+          <div class="input-group" style="margin-bottom: 20px;">
+            <label style="font-size: 11px;">Template Name</label>
+            <input type="text" id="edit-tpl-name" value="${existingName}" placeholder="e.g. Standard Commercial Terms" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main);">
+          </div>
+
+          <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-size: 11px; font-weight: 600; color: var(--gold-primary);">Template Content</label>
+            <span style="font-size: 10px; color: var(--text-muted);">${tempEditStatements.length} statements added</span>
+          </div>
+
+          <div id="edit-tpl-chips" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--glass-border);">
+      `;
+
+      if(tempEditStatements.length === 0) html += `<p style="text-align:center; font-size:12px; color:var(--text-muted); padding: 10px;">No statements. Use the tool below to add content.</p>`;
+
+      tempEditStatements.forEach((s, idx) => {
+        html += `
+          <div style="display: flex; gap: 8px; align-items: flex-start; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border);">
+            <textarea onchange="updateTempStatement(${idx}, this.value)" style="flex:1; border:none; background:transparent; font-size:12px; resize:none; font-family:inherit; line-height: 1.4; color: var(--text-main); min-height: 40px; outline:none;">${s}</textarea>
+            <button onclick="removeTempStatement(${idx})" style="background:transparent; border:none; color:#e74c3c; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+
+          <div style="background: var(--input-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 25px;">
+            <label style="font-size: 11px; display:block; margin-bottom: 8px;">Add Statement to Template</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="edit-tpl-new-stmt" list="tc-pool-datalist" placeholder="Write or search pool..." style="flex:1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: #fff; font-size: 13px; outline:none;">
+              <button class="btn-confirm" onclick="addTempStatement()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="edit-tpl-default" ${isDefault ? 'checked' : ''} style="accent-color: var(--gold-primary); width: 16px; height: 16px;">
+              <label for="edit-tpl-default" style="font-size: 12px; color: var(--text-main); cursor:pointer;">Set as system default</label>
+            </div>
+            <button class="btn-confirm" onclick="saveTCTemplateFromEditor()" style="padding: 12px 25px; font-size: 14px; box-shadow: 0 4px 15px var(--gold-glow);"><i class="fa-solid fa-floppy-disk"></i> Save Template</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('admin-tc-content').innerHTML = html;
+    }
+
+    // --- EDITOR LOGIC HELPERS ---
+    function addTempStatement() {
+      const val = document.getElementById('edit-tpl-new-stmt').value.trim();
+      if(!val) return;
+      tempEditStatements.push(val);
+      renderTemplateEditorUI(editingTemplateId ? "Editing Template" : "Create New Template", document.getElementById('edit-tpl-name').value);
+    }
+
+    function removeTempStatement(idx) {
+      tempEditStatements.splice(idx, 1);
+      renderTemplateEditorUI(editingTemplateId ? "Editing Template" : "Create New Template", document.getElementById('edit-tpl-name').value);
+    }
+
+    function updateTempStatement(idx, val) {
+      tempEditStatements[idx] = val.trim();
+    }
+
+    function saveTCTemplateFromEditor() {
+      const name = document.getElementById('edit-tpl-name').value.trim();
+      const isDef = document.getElementById('edit-tpl-default').checked;
+      
+      if(!name) { customAlert("Please enter a Template Name."); return; }
+      if(tempEditStatements.length === 0) { customAlert("Template must have at least one statement."); return; }
+
+      const statementsStr = tempEditStatements.join('||');
+      
+      document.getElementById('admin-tc-content').innerHTML = '<div style="text-align:center; padding: 40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--gold-primary);"></i><p style="margin-top:15px;">Saving Template Engine...</p></div>';
+      
       google.script.run.withSuccessHandler(res => {
-        if(res.success) fetchTCData(); // Re-fetch all data (which triggers UI refresh later)
-        else customAlert("Failed to update default.");
-        setTimeout(() => openAdminTCModal(), 1000); // refresh modal UI
+        if(res.success) {
+          fetchTCData(); // Sync all data
+          setTimeout(() => renderAdminTCUI(), 1000); // Go back to list
+        } else {
+          customAlert("Error saving template.");
+          renderTemplateEditorUI(editingTemplateId ? "Editing Template" : "Create New Template", name, isDef);
+        }
+      }).adminUpdateTCTemplate(editingTemplateId, name, statementsStr, isDef);
+    }
+
+    function adminSetDefaultTCTemplate(id, name, statements) {
+      const content = document.getElementById('admin-tc-content');
+      content.innerHTML = '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--gold-primary);"></i><p>Updating Default...</p></div>';
+      
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) {
+          // Re-fetch data and refresh UI once done
+          google.script.run.withSuccessHandler(data => {
+            tcPool = data.pool;
+            tcTemplates = data.templates;
+            renderAdminTCUI(); // Re-render the editor immediately
+          }).getTCData();
+        } else { 
+          customAlert("Failed to update default."); 
+          renderAdminTCUI(); 
+        }
       }).adminUpdateTCTemplate(id, name, statements, true);
     }
 
@@ -1743,7 +1904,10 @@
 
     // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
-      // Fetch Active Users for Login Dropdown
+      // 1. Fetch Terms & Conditions Data (Pool & Templates)
+      fetchTCData();
+
+      // 2. Fetch Active Users for Login Dropdown
       google.script.run.withSuccessHandler(users => {
         const select = document.getElementById('login-username');
         users.forEach(u => {
