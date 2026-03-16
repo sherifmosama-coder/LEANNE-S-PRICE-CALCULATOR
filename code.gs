@@ -22,7 +22,7 @@ const ADMIN_PASS = "4321"; // Hardcoded Master Admin Passcode
 function verifyLogin(username, passcode) {
   // 1. Check Hardcoded Admin
   if (String(username).trim().toLowerCase() === ADMIN_USER.toLowerCase() && String(passcode).trim() === ADMIN_PASS) {
-    return { success: true, role: 'Admin', userId: 'A-000', name: 'System Admin' };
+    return { success: true, role: 'Admin', userId: 'A-000', name: 'Administrator' };
   }
   
   // 2. Check Standard Users in tbl_Users
@@ -175,7 +175,8 @@ function getDashboardQuotes() {
         bedLength: row[headers.indexOf('Bed Length')],
         capModel: row[headers.indexOf('Cap Model')],
         totalPrice: row[headers.indexOf('Total Price')],
-        configStateJSON: row[headers.indexOf('Config State (JSON)')]
+        configStateJSON: row[headers.indexOf('Config State (JSON)')],
+        tcText: row[15] || '' // Grab the 16th column where TCs are saved
       });
     }
     
@@ -376,7 +377,7 @@ function getActiveUsersList() {
     // 1. Always include the Hardcoded Admin first
     users.push({
       username: ADMIN_USER,
-      fullName: 'System Admin'
+      fullName: 'Administrator'
     });
 
     // 2. Fetch the rest from tbl_Users
