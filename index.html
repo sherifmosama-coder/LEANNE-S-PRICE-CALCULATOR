@@ -1552,7 +1552,7 @@
                 <span>Freight Setup:</span> <strong>${freight}</strong>
               </div>
               <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13px;">
-                <span>Options Total:</span> <strong>$${optionsTotal.toFixed(2)}</strong>
+                <span>Add-ons Total:</span> <strong>$${optionsTotal.toFixed(2)}</strong>
               </div>
               ${surchargesHtml}
               <div style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 3px double #1b4c96; color: #1b4c96; font-size: 20px; font-weight: 700; margin-top: 10px;">
@@ -1568,36 +1568,103 @@
         </div>
       `;
       
-      // 5. Temporarily change Document Title for PDF Naming
-      const originalTitle = document.title;
+      // 5. Generate PDF in a Clean New Window to guarantee correct filename and avoid blank pages
       const cleanClientName = (currentQuoteData.clientName || 'Quote').replace(/[^a-zA-Z0-9 -]/g, "");
-      document.title = `${cleanClientName} - ${currentQuoteData.quoteId || 'Draft'}`;
+      const newFileName = `${cleanClientName}_${currentQuoteData.quoteId || 'Draft'}`;
       
-      // Hook into native browser event to cleanly restore the title AFTER the print dialog closes
-      window.onafterprint = () => { document.title = originalTitle; };
-
-      // 6. Wait for all images to load before printing (prevents blank images in PDF)
-      const images = layout.querySelectorAll('img');
-      let loadedCount = 0;
-
-      function triggerPrint() {
-        setTimeout(() => { window.print(); }, 400); 
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        customAlert("Please allow pop-ups in your browser to generate the PDF.");
+        return;
       }
 
-      if (images.length === 0) {
+      // Build a pure, isolated HTML document to completely avoid the parent's flexbox CSS
+      const printHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <title>${newFileName}</title>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+          <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+          <style>
+            @page { size: auto; margin: 0mm; }
+            
+            /* FORCE CHROME & SAFARI TO PRINT ALL BACKGROUND COLORS/GRAPHICS */
+            * { 
+              -webkit-print-color-adjust: exact !important; 
+              print-color-adjust: exact !important; 
+            }
+            
+            html, body { 
+              background: white !important; 
+              margin: 0 !important; 
+              padding: 0 !important; 
+              display: block !important; 
+              height: auto !important; 
+              overflow: visible !important; 
+              color: black;
+              font-family: 'Poppins', sans-serif;
+            }
+            #print-container { padding: 15mm; }
+            table { width: 100%; border-collapse: collapse; }
+            tr { page-break-inside: avoid; }
+            .print-no-break { page-break-inside: avoid; }
+          </style>
+        </head>
+        <body>
+          <div id="print-container">
+            ${layout.innerHTML}
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.open();
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+
+      // 6. Wait for all images to load IN THE NEW WINDOW before triggering print
+      const popupImages = printWindow.document.querySelectorAll('img');
+      let loadedCount = 0;
+      let hasTriggered = false;
+
+      function triggerPrint() {
+        if (hasTriggered) return;
+        hasTriggered = true;
+        
+        // CSS Hack: Convert all background colors to inner shadows so the browser is forced to print them
+        const allElements = printWindow.document.querySelectorAll('*');
+        allElements.forEach(el => {
+          const bgColor = printWindow.getComputedStyle(el).backgroundColor;
+          // If the element has a background color that isn't transparent
+          if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+             el.style.boxShadow = `inset 0 0 0 1000px ${bgColor}`;
+          }
+        });
+
+        setTimeout(() => { 
+          printWindow.focus();
+          printWindow.print(); 
+        }, 500); 
+      }
+
+      if (popupImages.length === 0) {
         triggerPrint();
       } else {
-        images.forEach(img => {
+        popupImages.forEach(img => {
           if (img.complete) {
             loadedCount++;
-            if (loadedCount === images.length) triggerPrint();
+            if (loadedCount === popupImages.length) triggerPrint();
           } else {
             img.onload = img.onerror = () => {
               loadedCount++;
-              if (loadedCount === images.length) triggerPrint();
+              if (loadedCount === popupImages.length) triggerPrint();
             };
           }
         });
+        // Failsafe in case an image permanently hangs
+        setTimeout(triggerPrint, 2500);
       }
     }
 
