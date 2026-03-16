@@ -1,9 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sterling Fleet Outfitters Configurator</title>
+  
+  <link rel="icon" type="image/png" href="https://github.com/sherifmosama-coder/LEANNE-S-PRICE-CALCULATOR/blob/main/realtruck.png?raw=true">
+  <link rel="apple-touch-icon" href="https://github.com/sherifmosama-coder/LEANNE-S-PRICE-CALCULATOR/blob/main/realtruck.png?raw=true">
+  
+  <meta property="og:title" content="Sterling Fleet Outfitters | Price Configurator">
+  <meta property="og:description" content="Official REALTRUCK Dealer Quote Configurator">
+  <meta property="og:image" content="https://github.com/sherifmosama-coder/LEANNE-S-PRICE-CALCULATOR/blob/main/realtruck.png?raw=true">
+  <meta property="og:type" content="website">
+
+  <title>Sterling Fleet Outfitters | Quote Configurator</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -329,11 +339,11 @@
         border-right: none;
         border-top: none;
         box-shadow: none;
-        padding: 70px 15px 25px 15px; /* Push content down so it clears the action buttons */
+        padding: 95px 15px 25px 15px; /* Increased top padding to clear the lowered action buttons */
       }
       
-      /* Pin action buttons to the absolute top right of the screen */
-      .action-buttons-container { position: fixed; top: 15px; right: 15px; gap: 8px; z-index: 100; }
+      /* Pin action buttons to the absolute top right of the screen, safely clearing iOS status bar */
+      .action-buttons-container { position: fixed; top: max(45px, env(safe-area-inset-top, 45px)); right: 15px; gap: 8px; z-index: 100; }
       .theme-btn, .reset-btn { padding: 6px 10px; font-size: 11px; }
       
       /* Adjust header for full-width layout */
@@ -391,23 +401,33 @@
       .image-popover-content.active { transform: translateX(-75%) translateY(0); }
       .image-popover-content::after { left: 75%; }
       .image-popover-content img { max-width: 180px; max-height: 180px; }
+      
+      /* Modals and Forms Mobile Tweaks */
+      .modal-content { padding: 25px 15px !important; width: 95%; max-width: 100%; }
+      .admin-tc-grid { gap: 15px !important; }
+      .admin-list-container { max-height: 150px !important; }
+      
+      .responsive-input-row { flex-wrap: wrap; }
+      .responsive-input-row > input { flex: 1 1 40%; min-width: 80px; }
+      .responsive-input-row > .input-wrapper { flex: 1 1 30%; min-width: 80px; }
+      .responsive-input-row > button { flex: 1 1 100%; margin-top: 5px; }
     }
 
     /* =========================================
        🖨️ PDF / PRINT OPTIMIZATION
        ========================================= */
     @media print {
-      /* Clean the slate */
-      body { background: white !important; margin: 0; padding: 0; }
+      /* Margin 0mm forces the browser to hide the default URL/Date headers & footers */
+      @page { size: auto; margin: 0mm; }
+      
+      /* Restore physical margins for the actual quote content so it doesn't touch the paper edge */
+      body { background: white !important; margin: 15mm !important; padding: 0; }
       
       /* Hide the entire web app interface */
       body > *:not(#print-layout) { display: none !important; }
       
       /* Show ONLY the Print Layout */
       #print-layout { display: block !important; width: 100%; color: black; font-family: 'Poppins', sans-serif; }
-      
-      /* Print Page Settings */
-      @page { margin: 12mm; }
       
       /* Prevent grid rows and table rows from being cut in half across pages */
       tr { page-break-inside: avoid; }
@@ -675,11 +695,11 @@
         <div style="display: flex; gap: 10px;">
           <input type="text" id="new-user-fullname" placeholder="Full Name (e.g. John Doe)" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="responsive-input-row" style="display: flex; gap: 10px; align-items: center;">
           <input type="text" id="new-user-name" placeholder="Login ID" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
-          <input type="password" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center; letter-spacing: 2px;">
-          <div class="input-wrapper" style="width: 100px;">
-            <select id="new-user-role" style="padding: 10px 10px 10px 10px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none; appearance: none; cursor: pointer;">
+          <input type="password" id="new-user-pass" placeholder="Passcode" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 85px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center; letter-spacing: 1px;">
+          <div class="input-wrapper" style="width: 95px;">
+            <select id="new-user-role" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none; appearance: none; cursor: pointer;">
               <option value="User">User</option>
               <option value="Admin">Admin</option>
             </select>
@@ -969,6 +989,11 @@
         clientName: q.clientName, clientPhone: q.clientPhone || '', clientEmail: q.clientEmail || '',
         quoteId: q.quoteId, revisionOf: q.quoteId
       };
+      
+      // --- LOAD SAVED T&Cs ---
+      currentQuoteTCs = q.tcText ? q.tcText.split('||').filter(s => s.trim() !== '') : [];
+      renderTCComposer(); // Update the UI visually
+      document.getElementById('tc-template-select').value = ""; // Set dropdown to custom
       
       document.getElementById('display-client-name').innerHTML = `${q.clientName} <span style="font-size:10px; color:var(--text-muted);">(Loaded: ${q.quoteId})</span>`;
       
@@ -1537,7 +1562,7 @@
           </div>
           
           <div class="print-no-break" style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-            ${currentQuoteTCs.map(stmt => `<p style="margin: 0; margin-bottom: 4px;">&bull; ${stmt}</p>`).join('') || '<p style="margin: 0;">This quote is valid for 30 days. Prices, specifications, and availability are subject to change.</p>'}
+            ${currentQuoteTCs.map(stmt => `<p style="margin: 0; margin-bottom: 4px;">&bull; ${stmt}</p>`).join('') || '<p style="margin: 0;">This quote is valid for a limited time. Prices, specifications, and availability are subject to change.</p>'}
             <p style="margin: 0;"><strong>Sterling Fleet Outfitters</strong> | REALTRUCK Authorized Dealer</p>
           </div>
         </div>
@@ -1728,41 +1753,44 @@
     function renderAdminTCUI() {
       editingTemplateId = null; // Reset state
       let html = `
-        <div style="display: grid; grid-template-columns: 1fr; gap: 25px;">
-          <div class="glass-panel" style="padding: 20px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <div style="padding: 15px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase;"><i class="fa-solid fa-layer-group"></i> Saved Templates</h4>
+              <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase; margin: 0;"><i class="fa-solid fa-layer-group"></i> Saved Templates</h4>
               <button class="btn-confirm" onclick="startNewTemplateEdit()" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-plus"></i> New Template</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto;">
+            <div style="display: flex; flex-direction: column; gap: 10px; max-height: 28vh; overflow-y: auto; padding-right: 5px;">
       `;
       
-      if(tcTemplates.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center;">No templates saved.</p>`;
+      if(tcTemplates.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center; margin: 10px 0;">No templates saved.</p>`;
       
       tcTemplates.forEach(t => {
          html += `
-           <div style="background: var(--input-bg); padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-             <div>
-               <strong style="font-size:14px; color: var(--text-main);">${t.name}</strong> 
-               ${t.isDefault ? '<span style="background: var(--gold-primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-left: 5px; font-weight: 700;">DEFAULT</span>' : ''}
-               <p style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">${t.statements.split('||').length} Clauses</p>
+           <div style="background: var(--input-bg); padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+               <div>
+                 <strong style="font-size:14px; color: var(--text-main);">${t.name}</strong> 
+                 ${t.isDefault ? '<span style="background: var(--gold-primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-left: 5px; font-weight: 700;">DEFAULT</span>' : ''}
+                 <p style="font-size: 11px; color: var(--text-muted); margin: 3px 0 0 0;">${t.statements.split('||').length} Clauses</p>
+               </div>
              </div>
-             <div style="display: flex; gap: 6px;">
-               <button onclick="editTCTemplate('${t.id}')" class="theme-btn" style="padding: 6px; width: 32px;" title="Edit Template Contents"><i class="fa-solid fa-pen-to-square"></i></button>
+             <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+               <button onclick="editTCTemplate('${t.id}')" class="theme-btn" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                ${!t.isDefault ? `<button onclick="adminSetDefaultTCTemplate('${t.id}', '${t.name.replace(/'/g, "\\'")}', '${t.statements.replace(/'/g, "\\'")}')" class="theme-btn" style="padding: 6px 10px; font-size: 11px;">Set Default</button>` : ''}
-               <button onclick="adminDeleteTCTemplate('${t.id}')" class="btn-cancel" style="padding: 6px; width: 32px; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: none;" title="Delete Template"><i class="fa-solid fa-trash"></i></button>
+               <button onclick="adminDeleteTCTemplate('${t.id}')" class="btn-cancel" style="padding: 6px 12px; font-size: 11px; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: none;"><i class="fa-solid fa-trash"></i> Delete</button>
              </div>
            </div>
          `;
       });
       html += `</div></div>
 
-          <div class="glass-panel" style="padding: 20px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-            <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase; margin-bottom: 15px;"><i class="fa-solid fa-database"></i> Global Statement Pool</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+          <div style="padding: 15px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <h4 style="color: var(--gold-primary); font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0;"><i class="fa-solid fa-database"></i> Global Statement Pool</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 28vh; overflow-y: auto; padding-right: 5px;">
       `;
       
-      if(tcPool.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center;">Pool is empty.</p>`;
+      if(tcPool.length === 0) html += `<p style="font-size:12px; color:var(--text-muted); text-align:center; margin: 10px 0;">Pool is empty.</p>`;
       
       tcPool.forEach(p => {
          html += `
@@ -1810,7 +1838,7 @@
             <span style="font-size: 10px; color: var(--text-muted);">${tempEditStatements.length} statements added</span>
           </div>
 
-          <div id="edit-tpl-chips" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--glass-border);">
+          <div id="edit-tpl-chips" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--glass-border); max-height: 250px; overflow-y: auto;">
       `;
 
       if(tempEditStatements.length === 0) html += `<p style="text-align:center; font-size:12px; color:var(--text-muted); padding: 10px;">No statements. Use the tool below to add content.</p>`;
