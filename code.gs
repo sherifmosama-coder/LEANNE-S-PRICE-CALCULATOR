@@ -260,10 +260,9 @@ function getAdminUsersDB() {
   } catch (e) { return []; }
 }
 
-function saveNewUserDB(username, fullName, passcode) {
+function saveNewUserDB(username, fullName, passcode, role) {
   try {
     const checkUser = String(username).trim().toLowerCase();
-    
     // 1. Check if the username conflicts with the Hardcoded Admin
     if (checkUser === ADMIN_USER.toLowerCase()) {
       return { success: false, message: "Username already exists." };
@@ -283,9 +282,49 @@ function saveNewUserDB(username, fullName, passcode) {
 
     // 3. If unique, proceed with saving
     const newId = 'U-' + Math.floor(1000 + Math.random() * 9000);
-    // Notice the "'" + passcode -> Forces Google Sheets to save '0000' exactly as text
-    sheet.appendRow([newId, username, fullName, "'" + passcode, 'User', 'Active']);
+    // Role is now passed from the frontend UI
+    const userRole = role || 'User'; 
+    sheet.appendRow([newId, username, fullName, "'" + passcode, userRole, 'Active']);
     return { success: true };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+/**
+ * Updates an existing user's role in the tbl_Users sheet
+ */
+function updateUserRoleDB(userId, newRole) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idCol = headers.indexOf('User ID');
+    const roleCol = headers.indexOf('Role');
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === userId) {
+        sheet.getRange(i + 1, roleCol + 1).setValue(newRole);
+        return { success: true };
+      }
+    }
+    return { success: false, message: "User not found." };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+
+function updateUserRoleDB(userId, newRole) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Users');
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idCol = headers.indexOf('User ID');
+    const roleCol = headers.indexOf('Role');
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === userId) {
+        sheet.getRange(i + 1, roleCol + 1).setValue(newRole);
+        return { success: true };
+      }
+    }
+    return { success: false, message: "User not found." };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
