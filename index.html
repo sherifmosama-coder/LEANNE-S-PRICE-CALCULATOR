@@ -477,7 +477,7 @@
 
   <div class="glass-panel" id="main-app-container" style="display: none;">
     <div class="action-buttons-container">
-      <button id="admin-tc-btn" class="expand-btn" onclick="openAdminTCModal()" style="display: none; border-color: var(--gold-primary);">
+      <button id="admin-tc-btn" class="expand-btn" onclick="openAdminTCModal()" style="display: none;">
         <i class="fa-solid fa-scale-balanced"></i><span>Manage T&Cs</span>
       </button>
       <button id="admin-panel-btn" class="expand-btn" onclick="openAdminModal()" style="display: none;">
@@ -677,7 +677,13 @@
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           <input type="text" id="new-user-name" placeholder="Login ID" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;">
-          <input type="password" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center; letter-spacing: 2px;">
+          <input type="password" id="new-user-pass" placeholder="4-Digit Code" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none; text-align: center; letter-spacing: 2px;">
+          <div class="input-wrapper" style="width: 100px;">
+            <select id="new-user-role" style="padding: 10px 10px 10px 10px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 12px; outline: none; appearance: none; cursor: pointer;">
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
           <button class="btn-confirm" onclick="addNewUser()" style="padding: 10px 15px;"><i class="fa-solid fa-plus"></i> Add</button>
         </div>
       </div>
@@ -1171,11 +1177,19 @@
       
       let html = '';
       users.forEach(u => {
-        let displayPass = "*".repeat(Math.max(0, String(u.passcode).length - 1)) + String(u.passcode).slice(-1); // Mask all but last digit
+        let displayPass = "*".repeat(Math.max(0, String(u.passcode).length - 1)) + String(u.passcode).slice(-1); 
+        const roleLabel = u.role === 'Admin' ? 'ADMIN' : 'USER';
+        const roleStyle = u.role === 'Admin' ? 'background: var(--gold-primary); color: white;' : 'background: var(--glass-border); color: var(--text-muted);';
+
         html += `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--glass-border); font-size: 13px; background: rgba(255,255,255,0.4); border-radius: 6px; margin-bottom: 6px;">
-            <div>
-              <strong style="color: var(--text-main); font-size: 14px;">${u.fullName || u.username}</strong> <span style="color: var(--gold-primary); font-size: 11px;">(${u.id})</span>
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="color: var(--text-main); font-size: 14px;">${u.fullName || u.username}</strong>
+                <span onclick="toggleRole('${u.id}', '${u.role}')" style="cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; transition: all 0.2s; ${roleStyle}" title="Click to Change Role">
+                  ${roleLabel} <i class="fa-solid fa-arrows-rotate" style="margin-left:4px; font-size:8px;"></i>
+                </span>
+              </div>
               <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Login ID: <strong>${u.username}</strong> | Pass: ${displayPass}</div>
             </div>
             <div style="display: flex; gap: 5px;">
@@ -1191,12 +1205,13 @@
       const fullName = document.getElementById('new-user-fullname').value.trim();
       const name = document.getElementById('new-user-name').value.trim();
       const pass = document.getElementById('new-user-pass').value.trim();
+      const role = document.getElementById('new-user-role').value;
       
       if(!name || pass.length !== 4) { customAlert("Please enter a Login ID and a 4-digit numeric passcode."); return; }
       if(!fullName) { customAlert("Please enter the user's Full Name."); return; }
       if(!/^\d{4}$/.test(pass)) { customAlert("Passcode must be exactly 4 digits."); return; }
       
-      const addBtn = document.querySelector('#new-user-pass').nextElementSibling;
+      const addBtn = document.querySelector('button[onclick="addNewUser()"]');
       addBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
       
       google.script.run.withSuccessHandler(res => {
@@ -1206,8 +1221,19 @@
           document.getElementById('new-user-pass').value = '';
           addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
           openAdminModal(); // Refresh list
-        } else { customAlert("Failed to add user: " + res.message); addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add'; }
-      }).saveNewUserDB(name, fullName, pass);
+        } else { 
+          customAlert("Failed to add user: " + res.message); 
+          addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add'; 
+        }
+      }).saveNewUserDB(name, fullName, pass, role);
+    }
+
+    function toggleRole(userId, currentRole) {
+      const newRole = currentRole === 'Admin' ? 'User' : 'Admin';
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) openAdminModal();
+        else customAlert("Failed to update role.");
+      }).updateUserRoleDB(userId, newRole);
     }
 
     let targetEditUserId = null;
@@ -1659,7 +1685,7 @@
         container.innerHTML += `
           <div style="display: flex; justify-content: space-between; align-items: flex-start; background: #fff; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
             <div style="flex: 1;">
-              <p style="font-size: 13px; color: var(--text-main); margin: 0; line-height: 1.4;">${stmt}</p>
+              <p style="font-size: 13px; color: black; margin: 0; line-height: 1.4;">${stmt}</p>
               ${isNew ? `<div style="margin-top: 5px; font-size: 11px; color: var(--gold-primary); display: flex; align-items: center; gap: 5px;"><input type="checkbox" checked class="tc-save-pool-cb" data-text="${stmt}"> Save to Global Pool</div>` : ''}
             </div>
             <button onclick="removeTCStatement(${idx})" style="background: transparent; border: none; color: #e74c3c; cursor: pointer; padding: 5px;"><i class="fa-solid fa-xmark"></i></button>
@@ -2713,6 +2739,22 @@ let teleportHistory = {}; // Keeps track of where we came from
 
       // 3. Wipe the memory for this path
       delete teleportHistory[currentTargetId];
+    }
+
+    function toggleRole(userId, currentRole) {
+      const newRole = currentRole === 'Admin' ? 'User' : 'Admin';
+      // Visual feedback
+      const target = event.currentTarget;
+      target.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          openAdminModal(); // Refresh user list UI
+        } else {
+          customAlert("Failed to update role: " + res.message);
+          openAdminModal();
+        }
+      }).updateUserRoleDB(userId, newRole);
     }
 
     function renderReturnButton(targetId) {
