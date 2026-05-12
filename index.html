@@ -521,7 +521,7 @@
     <div id="dashboard-view" style="display: block;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="color: var(--text-main); font-size: 18px;">Welcome, <span id="user-greeting">User</span></h3>
-        <button class="btn-confirm" onclick="openIntakeModal()" style="font-size: 15px; padding: 12px 20px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 15px var(--gold-glow); transition: all 0.3s ease;"><i class="fa-solid fa-plus"></i> New Quote</button>
+        <button class="btn-confirm" onclick="startNewQuote()" style="font-size: 15px; padding: 12px 20px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 15px var(--gold-glow); transition: all 0.3s ease;"><i class="fa-solid fa-plus"></i> New Quote</button>
       </div>
       
       <div id="quotes-list-container" style="background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; min-height: 200px;">
@@ -529,13 +529,6 @@
     </div>
 
     <div id="configurator-view" style="display: none;">
-      
-      <div id="client-info-banner" style="background: rgba(27, 76, 150, 0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <span style="font-size: 11px; color: var(--gold-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Client</span><br>
-          <span id="display-client-name" style="font-size: 15px; color: var(--text-main); font-weight: 600;"></span>
-        </div>
-      </div>
 
     <div id="loading" class="loader-container">
       <div class="loader"></div>
@@ -630,8 +623,8 @@
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <div class="quote-labels">
             <span class="quote-title">Estimated Total</span>
-            <span class="quote-base">Base Price: <span id="base-price-display">$0.00</span></span>
-            <span class="quote-base" style="margin-top: 2px;">Freight: <span id="freight-price-display">$170.00</span></span>
+            <span class="quote-base" style="display: none !important;">Base Price: <span id="base-price-display">$0.00</span></span>
+            <span class="quote-base" style="margin-top: 2px;">Freight: <span id="freight-price-display">$170.10</span></span>
             <div id="surcharge-messages"></div>
           </div>
           <div class="quote-total" id="total-price-display">$0.00</div>
@@ -642,43 +635,6 @@
           <button id="save-quote-btn" onclick="saveQuote()" class="btn-confirm" style="flex: 2; padding: 12px; font-size: 14px; min-width: 120px;"><i class="fa-solid fa-floppy-disk"></i> Save Quote</button>
           <button id="print-quote-btn" onclick="printQuote()" class="btn-cancel" style="flex: 1; padding: 12px; font-size: 14px; opacity: 0.5; cursor: not-allowed; min-width: 80px;" disabled><i class="fa-solid fa-file-pdf"></i> PDF</button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="intake-modal">
-    <div class="modal-content" style="max-width: 400px; text-align: left;">
-      <h3 style="margin-bottom: 5px;">New Quote Request</h3>
-      <p style="margin-bottom: 25px;">Please enter the client's information.</p>
-      
-      <div class="input-group">
-        <label>Client Name *</label>
-        <div class="input-wrapper">
-          <i class="fa-solid fa-user-tag"></i>
-          <input type="text" id="intake-name" list="client-datalist" placeholder="Search or Enter Client Name" oninput="handleClientAutoFill()" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none; transition: border 0.3s;">
-          <datalist id="client-datalist"></datalist>
-        </div>
-      </div>
-
-      <div class="input-group">
-        <label>Phone Number <span style="font-size: 10px; color: var(--text-muted);">(Optional)</span></label>
-        <div class="input-wrapper">
-          <i class="fa-solid fa-phone"></i>
-          <input type="tel" id="intake-phone" placeholder="Optional" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none;">
-        </div>
-      </div>
-
-      <div class="input-group">
-        <label>Email Address <span style="font-size: 10px; color: var(--text-muted);">(Optional)</span></label>
-        <div class="input-wrapper">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="intake-email" placeholder="Optional" style="width: 100%; padding: 12px 15px 12px 45px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 14px; outline: none;">
-        </div>
-      </div>
-
-      <div class="modal-buttons" style="margin-top: 30px;">
-        <button class="btn-cancel" onclick="closeIntakeModal()" style="flex: 1;">Cancel</button>
-        <button class="btn-confirm" onclick="startNewQuote()" style="flex: 2;">Begin Configuration</button>
       </div>
     </div>
   </div>
@@ -853,7 +809,7 @@
       // Wipe state memory cleanly
       isProgrammaticUpdate = true;
       requestFullReset();
-      currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
+      currentQuoteData = { quoteId: null, revisionOf: null };
       lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
       currentBasePrice = 0;
       isProgrammaticUpdate = false;
@@ -885,7 +841,7 @@
         html += `
           <div style="background: var(--input-bg); border: 1px solid var(--glass-border); padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 10px var(--gold-glow)';" onmouseout="this.style.boxShadow='none';" onclick="loadQuote('${q.quoteId}')">
             <div>
-              <div style="font-weight: 600; color: var(--text-main); font-size: 15px;">${q.clientName || 'Unknown Client'} <span style="font-size: 11px; background: rgba(27, 76, 150, 0.1); color: var(--gold-primary); padding: 2px 6px; border-radius: 4px; margin-left: 5px; border: 1px solid var(--gold-primary);">${q.quoteId}</span></div>
+              <div style="font-weight: 600; color: var(--text-main); font-size: 15px;">Quote <span style="font-size: 11px; background: rgba(27, 76, 150, 0.1); color: var(--gold-primary); padding: 2px 6px; border-radius: 4px; margin-left: 5px; border: 1px solid var(--gold-primary);">${q.quoteId}</span></div>
               <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><i class="fa-solid fa-truck"></i> ${q.make} ${q.model} - ${q.capType}</div>
             </div>
             <div style="text-align: right;">
@@ -899,51 +855,11 @@
       container.innerHTML = html;
     }
 
-    function openIntakeModal() {
-      document.getElementById('intake-name').value = '';
-      document.getElementById('intake-phone').value = '';
-      document.getElementById('intake-email').value = '';
-      document.getElementById('intake-name').style.borderColor = 'var(--glass-border)';
-      document.getElementById('intake-modal').classList.add('active');
-    }
-
-    function closeIntakeModal() {
-      document.getElementById('intake-modal').classList.remove('active');
-    }
-
-    function handleClientAutoFill() {
-      const inputName = document.getElementById('intake-name').value.trim().toLowerCase();
-      const match = globalClientsList.find(c => c.name.toLowerCase() === inputName);
-      if (match) {
-        document.getElementById('intake-phone').value = match.phone || '';
-        document.getElementById('intake-email').value = match.email || '';
-      }
-    }
-
     function startNewQuote() {
-      const name = document.getElementById('intake-name').value.trim();
-      const phone = document.getElementById('intake-phone').value.trim();
-      const email = document.getElementById('intake-email').value.trim();
-
-      if (!name) {
-        customAlert('Please enter a Client Name.');
-        document.getElementById('intake-name').style.borderColor = '#e74c3c';
-        return;
-      }
-      
-      // Save client in the background
-      google.script.run.saveOrUpdateClientDB(name, phone, email);
-
       currentQuoteData = {
-        clientName: name,
-        clientPhone: phone,
-        clientEmail: email,
         quoteId: null, // Null means this is a brand new quote
         revisionOf: null
       };
-      
-      document.getElementById('display-client-name').innerText = name;
-      closeIntakeModal();
       
       isProgrammaticUpdate = true; // Lock modals
       requestFullReset(); // Ensure the configurator is completely blank
@@ -965,11 +881,9 @@
       requestFullReset(); // Automatically wipes the UI dropdowns, checkboxes, and prices
       
       // 3. Wipe state tracking variables completely
-      currentQuoteData = { clientName: '', clientPhone: '', clientEmail: '', quoteId: null, revisionOf: null };
+      currentQuoteData = { quoteId: null, revisionOf: null };
       lastValidState = { make: '', model: '', sizeCategory: '', capType: 'Fiberglass', bedLength: '', capModel: '' };
       currentBasePrice = 0;
-      
-      document.getElementById('display-client-name').innerHTML = ''; // Clear client display
       
       isProgrammaticUpdate = false; // Release safety lock
       
@@ -986,7 +900,6 @@
       if (!q) { isProgrammaticUpdate = false; return; }
 
       currentQuoteData = {
-        clientName: q.clientName, clientPhone: q.clientPhone || '', clientEmail: q.clientEmail || '',
         quoteId: q.quoteId, revisionOf: q.quoteId
       };
       
@@ -994,8 +907,6 @@
       currentQuoteTCs = q.tcText ? q.tcText.split('||').filter(s => s.trim() !== '') : [];
       renderTCComposer(); // Update the UI visually
       document.getElementById('tc-template-select').value = ""; // Set dropdown to custom
-      
-      document.getElementById('display-client-name').innerHTML = `${q.clientName} <span style="font-size:10px; color:var(--text-muted);">(Loaded: ${q.quoteId})</span>`;
       
       document.getElementById('dashboard-view').style.display = 'none';
       document.getElementById('configurator-view').style.display = 'block';
@@ -1150,7 +1061,7 @@
       // 3. Gather base truck data
       let dbPayload = {
         quoteId: currentQuoteData.quoteId, revisionOf: currentQuoteData.revisionOf, createdBy: currentUser.name,
-        clientName: currentQuoteData.clientName, clientPhone: currentQuoteData.clientPhone, clientEmail: currentQuoteData.clientEmail,
+        clientName: "", clientPhone: "", clientEmail: "", // Kept as empty strings to preserve DB column order
         make: document.getElementById('makeSelect').value, model: document.getElementById('modelSelect').value,
         sizeCategory: document.getElementById('sizeChip').innerText.trim(), capType: document.querySelector('input[name="capType"]:checked').value,
         bedLength: document.getElementById('bedLengthSelect').value, capModel: document.getElementById('capModelSelect').value,
@@ -1168,7 +1079,6 @@
             // Success! Update local tracking so next save makes a new revision
             currentQuoteData.quoteId = res.newQuoteId; 
             currentQuoteData.revisionOf = res.newQuoteId; 
-            document.getElementById('display-client-name').innerHTML = `${currentQuoteData.clientName} <span style="font-size:10px; color:var(--text-muted);">(Saved: ${res.newQuoteId})</span>`;
             
             // Fire off the background task to save new TC statements & templates
             if (newStatementsToSave.length > 0 || newTemplatesToSave.length > 0) {
@@ -1502,14 +1412,8 @@
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; margin-bottom: 30px;" class="print-no-break">
-            <div style="flex: 1;">
-              <h4 style="margin: 0 0 8px 0; color: #1b4c96; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Prepared For:</h4>
-              <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">${currentQuoteData.clientName || 'N/A'}</p>
-              ${currentQuoteData.clientPhone ? `<p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;"><i class="fa-solid fa-phone" style="width: 15px;"></i> ${currentQuoteData.clientPhone}</p>` : ''}
-              ${currentQuoteData.clientEmail ? `<p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;"><i class="fa-solid fa-envelope" style="width: 15px;"></i> ${currentQuoteData.clientEmail}</p>` : ''}
-            </div>
-            <div style="flex: 1; text-align: right;">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;" class="print-no-break">
+            <div style="text-align: right;">
               <h4 style="margin: 0 0 8px 0; color: #1b4c96; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Prepared By:</h4>
               <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0f172a;">${currentUser ? currentUser.name : 'Staff'}</p>
               <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">Sterling Fleet Outfitters</p>
@@ -1569,8 +1473,7 @@
       `;
       
       // 5. Generate PDF in a Clean New Window to guarantee correct filename and avoid blank pages
-      const cleanClientName = (currentQuoteData.clientName || 'Quote').replace(/[^a-zA-Z0-9 -]/g, "");
-      const newFileName = `${cleanClientName}_${currentQuoteData.quoteId || 'Draft'}`;
+      const newFileName = `Quote_${currentQuoteData.quoteId || 'Draft'}`;
       
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
@@ -2038,17 +1941,6 @@
           select.appendChild(opt);
         });
       }).getActiveUsersList();
-
-      // Fetch Clients for Intake Auto-fill
-      google.script.run.withSuccessHandler(clients => {
-        globalClientsList = clients;
-        const datalist = document.getElementById('client-datalist');
-        clients.forEach(c => {
-          let opt = document.createElement('option');
-          opt.value = c.name;
-          datalist.appendChild(opt);
-        });
-      }).getClientsDB();
 
       // Load Saved Theme Immediately
       const savedTheme = localStorage.getItem('realtruck_theme') || 'light';
@@ -2894,7 +2786,7 @@ let teleportHistory = {}; // Keeps track of where we came from
     }
 
     function calculateTotal() {
-      let freightCharge = 170; // Fixed freight charge
+      let freightCharge = 170.1; // Fixed freight charge
       let optionsTotal = 0;
       const checkboxes = document.querySelectorAll('.option-checkbox:checked');
       
