@@ -13,7 +13,7 @@ function doGet(e) {
 }
 
 // ==========================================
-// 🔐 PHASE 2: AUTHENTICATION & USER LOGIC
+// 🔐 PHASE 1: AUTHENTICATION & USER LOGIC
 // ==========================================
 
 const ADMIN_USER = "Admin";
@@ -227,7 +227,7 @@ function saveQuoteToDB(quoteData, configJSON) {
 }
 
 // ==========================================
-// 👥 PHASE 6: ADMIN USER MANAGEMENT
+// 👥 PHASE 5: ADMIN USER MANAGEMENT
 // ==========================================
 
 function getAdminUsersDB() {
@@ -367,7 +367,7 @@ function deleteUserDB(userId) {
 }
 
 // ==========================================
-// 🏢 PHASE 7: CLIENTS & LOGIN DATA
+// 🏢 PHASE 6: CLIENTS & LOGIN DATA
 // ==========================================
 
 function getActiveUsersList() {
@@ -402,49 +402,8 @@ function getActiveUsersList() {
   } catch (e) { return []; }
 }
 
-function getClientsDB() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Clients');
-    if (!sheet) return [];
-    const data = sheet.getDataRange().getValues();
-    let clients = [];
-    for (let i = 1; i < data.length; i++) {
-      clients.push({
-        name: String(data[i][1]).trim(),
-        phone: String(data[i][2]).trim(),
-        email: String(data[i][3]).trim()
-      });
-    }
-    return clients;
-  } catch (e) { return []; }
-}
-
-function saveOrUpdateClientDB(name, phone, email) {
-  try {
-    if (!name) return;
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tbl_Clients');
-    if (!sheet) return;
-    const data = sheet.getDataRange().getValues();
-    
-    // Check if client exists
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]).trim().toLowerCase() === String(name).trim().toLowerCase()) {
-        // Update phone/email if they provided new ones
-        if (phone) sheet.getRange(i + 1, 3).setValue(phone);
-        if (email) sheet.getRange(i + 1, 4).setValue(email);
-        return { success: true, message: 'Updated' };
-      }
-    }
-    
-    // If not found, create new client
-    const newId = 'C-' + Math.floor(10000 + Math.random() * 90000);
-    sheet.appendRow([newId, name, phone, email]);
-    return { success: true, message: 'Added' };
-  } catch (e) { return { success: false, error: e.toString() }; }
-}
-
 // ==========================================
-// 📝 PHASE 8: TERMS & CONDITIONS ENGINE
+// 📝 PHASE 7: TERMS & CONDITIONS ENGINE
 // ==========================================
 
 function getTCData() {
