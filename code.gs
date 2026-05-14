@@ -176,7 +176,11 @@ function getDashboardQuotes() {
         capModel: row[headers.indexOf('Cap Model')],
         totalPrice: row[headers.indexOf('Total Price')],
         configStateJSON: row[headers.indexOf('Config State (JSON)')],
-        tcText: row[15] || '' // Grab the 16th column where TCs are saved
+        tcText: row[15] || '', // Grab the 16th column where TCs are saved
+        year: headers.indexOf('Year') > -1 ? row[headers.indexOf('Year')] : row[16] || '',
+        trim: headers.indexOf('Trim') > -1 ? row[headers.indexOf('Trim')] : row[17] || '',
+        cab: headers.indexOf('Cab') > -1 ? row[headers.indexOf('Cab')] : row[18] || '',
+        status: headers.indexOf('Status') > -1 ? row[headers.indexOf('Status')] : row[19] || ''
       });
     }
     
@@ -218,13 +222,17 @@ function saveQuoteToDB(quoteData, configJSON) {
       quoteData.clientName, quoteData.clientPhone, quoteData.clientEmail,
       quoteData.make, quoteData.model, quoteData.sizeCategory, quoteData.capType,
       quoteData.bedLength, quoteData.capModel, quoteData.totalPrice, configJSON,
-      quoteData.tcText || '' // <--- Added TC Text to save alongside the quote!
+      quoteData.tcText || '', 
+      quoteData.year || '', 
+      quoteData.trim || '', 
+      quoteData.cab || ''
     ]);
     return { success: true, newQuoteId: newQuoteId };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
 }
+
 
 // ==========================================
 // 👥 PHASE 5: ADMIN USER MANAGEMENT
